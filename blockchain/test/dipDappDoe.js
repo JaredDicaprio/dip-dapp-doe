@@ -211,7 +211,7 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board should be empty");
         assert.equal(status.toNumber(), 0, "The game should not be started yet");
 
-        assert.equal(amount.comparedTo(web3.toWei(0.01, 'ether')), 0, "The game should have 0.01 ether");
+        assert.equal(amount.comparedTo(web3.toWei(0.005, 'ether')), 0, "The game should have 0.005 ether");
         assert.equal(nick1, "James", "The player 1 should be James");
         assert.equal(nick2, "Kathy", "The player 2 should be Kathy");
         assert.deepEqual(rest, [], "The response should have 5 elements");
@@ -224,7 +224,7 @@ contract('DipDappDoe', function (accounts) {
 
         [player1, player2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
         assert.equal(player1, accounts[0], "The address of player 1 should be set");
-        assert.equal(player2, accounts[0], "The address of player 2 should be empty");
+        assert.equal(player2, accounts[1], "The address of player 2 should be set");
         assert.deepEqual(rest3, [], "The response should have 2 elements");
     });
 

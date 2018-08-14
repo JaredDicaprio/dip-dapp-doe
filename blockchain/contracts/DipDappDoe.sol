@@ -73,6 +73,8 @@ contract DipDappDoe {
     // OPERATIONS
 
     function createGame(string randomNumberHash, string nick) public payable returns (uint32 gameIdx) {
+        require(lastGameIdx + 1 > lastGameIdx);
+
         gamesData[lastGameIdx].index = openGames.length;
         gamesData[lastGameIdx].creatorHash = randomNumberHash;
         gamesData[lastGameIdx].amount = msg.value;
@@ -89,7 +91,18 @@ contract DipDappDoe {
     }
 
     function acceptGame(uint32 gameIdx, uint8 randomNumber, string nick) public payable {
-        revert();
+        require(gameIdx < lastGameIdx);
+        require(gamesData[gameIdx].players[0] != 0x0);
+        require(msg.value == gamesData[gameIdx].amount);
+        require(gamesData[gameIdx].players[1] == 0x0);
+        require(gamesData[gameIdx].status == 0);
+
+        gamesData[gameIdx].guestRandomNumber = randomNumber;
+        gamesData[gameIdx].nicks[1] = nick;
+        gamesData[gameIdx].players[1] = msg.sender;
+        gamesData[gameIdx].lastTransactions[1] = now;
+
+        emit GameAccepted(gameIdx);
     }
 
     function confirmGame(uint32 gameIdx, uint8 originalRandomNumber, bytes32 originalSalt) public {

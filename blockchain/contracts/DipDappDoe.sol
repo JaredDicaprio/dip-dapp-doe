@@ -26,45 +26,81 @@ contract DipDappDoe {
     }
     uint32[] openGames; // list of @'s for active games
     mapping(uint32 => Game) gamesData; // data containers
+    uint32 lastGameIdx;
 
     // EVENTS
 
-    event GameCreated(address indexed game);
-    event GameAccepted(address indexed game);
-    event GameStarted(address indexed game);
-    event PositionMarked(address indexed game);
-    event GameEnded(address indexed game);
+    event GameCreated(uint32 indexed gameIdx);
+    event GameAccepted(uint32 indexed gameIdx);
+    event GameStarted(uint32 indexed gameIdx);
+    event PositionMarked(uint32 indexed gameIdx);
+    event GameEnded(uint32 indexed gameIdx);
 
     // CALLABLE
 
     function getOpenGames() public view returns (uint32[]){
-        
+        return openGames;
     }
 
-    function getGame(address gameId) public view 
-    returns (uint8[9] cells, uint8 status, uint amount, uint created, string nick1, string nick2) {
-        return (cells, status, amount, created, nick1, nick2);
+    function getGameInfo(uint32 gameIdx) public view 
+    returns (uint8[9] cells, uint8 status, uint amount, string nick1, string nick2) {
+        return (
+            gamesData[gameIdx].cells,
+            gamesData[gameIdx].status,
+            gamesData[gameIdx].amount,
+            gamesData[gameIdx].nicks[0],
+            gamesData[gameIdx].nicks[1]
+        );
+    }
+
+    function getGameTimestamps(uint32 gameIdx) public view 
+    returns (uint created, uint lastTransaction1, uint lastTransaction2) {
+        return (
+            gamesData[gameIdx].created,
+            gamesData[gameIdx].lastTransactions[0],
+            gamesData[gameIdx].lastTransactions[1]
+        );
+    }
+
+    function getGamePlayers(uint32 gameIdx) public view 
+    returns (address player1, address player2) {
+        return (
+            gamesData[gameIdx].players[0],
+            gamesData[gameIdx].players[1]
+        );
     }
 
     // OPERATIONS
 
-    function createGame(string randomNumberHash) public payable returns (address) {
+    function createGame(string randomNumberHash, string nick) public payable returns (uint32 gameIdx) {
+        gamesData[lastGameIdx].index = openGames.length;
+        gamesData[lastGameIdx].creatorHash = randomNumberHash;
+        gamesData[lastGameIdx].amount = msg.value;
+        gamesData[lastGameIdx].created = now;
+        gamesData[lastGameIdx].nicks[0] = nick;
+        gamesData[lastGameIdx].players[0] = msg.sender;
+        gamesData[lastGameIdx].lastTransactions[0] = now;
+        openGames.push(lastGameIdx);
+
+        gameIdx = lastGameIdx;
+        emit GameCreated(lastGameIdx);
+        
+        lastGameIdx++;
+    }
+
+    function acceptGame(uint32 gameIdx, uint8 randomNumber, string nick) public payable {
         revert();
     }
 
-    function acceptGame(address gameId, uint8 randomNumber) public payable {
+    function confirmGame(uint32 gameIdx, uint8 originalRandomNumber, bytes32 originalSalt) public {
         revert();
     }
 
-    function confirmGame(address gameId, uint8 originalRandomNumber, bytes32 originalSalt) public {
+    function markPosition(uint32 gameIdx, uint8 cell) public {
         revert();
     }
 
-    function markPosition(address gameId, uint8 cell) public {
-        revert();
-    }
-
-    function withdraw(address gameId) public {
+    function withdraw(uint32 gameIdx) public {
         revert();
     }
 

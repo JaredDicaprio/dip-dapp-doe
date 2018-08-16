@@ -18,16 +18,16 @@ contract TestDipDappDoe1 {
     }
 
     function testHashingFunction() public {
-        string memory hash1 = gamesInstance.saltedHash(123, "my salt goes here");
-        string memory hashA = LibString.saltedHash(123, "my salt goes here");
+        bytes32 hash1 = gamesInstance.saltedHash(123, "my salt goes here");
+        bytes32 hashA = LibString.saltedHash(123, "my salt goes here");
         
-        string memory hash2 = gamesInstance.saltedHash(123, "my salt goes 2 here");
-        string memory hashB = LibString.saltedHash(123, "my salt goes 2 here");
+        bytes32 hash2 = gamesInstance.saltedHash(123, "my salt goes 2 here");
+        bytes32 hashB = LibString.saltedHash(123, "my salt goes 2 here");
         
-        string memory hash3 = gamesInstance.saltedHash(234, "my salt goes here");
-        string memory hashC = LibString.saltedHash(234, "my salt goes here");
+        bytes32 hash3 = gamesInstance.saltedHash(234, "my salt goes here");
+        bytes32 hashC = LibString.saltedHash(234, "my salt goes here");
         
-        Assert.isNotEmpty(hash1, "Salted hash should be a valid string");
+        Assert.isNotZero(hash1, "Salted hash should be valid");
 
         Assert.equal(hash1, hashA, "Hashes should match");
         Assert.equal(hash2, hashB, "Hashes should match");
@@ -48,7 +48,7 @@ contract TestDipDappDoe1 {
         uint lastTransaction1;
         uint lastTransaction2;
 
-        string memory hash = gamesInstance.saltedHash(123, "my salt goes here");
+        bytes32 hash = gamesInstance.saltedHash(123, "my salt goes here");
         uint32 gameIdx = gamesInstance.createGame(hash, "John");
         Assert.equal(uint(gameIdx), 0, "The first game should have index 0");
 

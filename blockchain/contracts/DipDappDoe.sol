@@ -21,10 +21,10 @@ contract DipDappDoe {
         uint[2] lastTransactions; // timestamp => block number
         bool[2] withdrawn;
 
-        string creatorHash;
+        bytes32 creatorHash;
         uint8 guestRandomNumber;
     }
-    uint32[] openGames; // list of @'s for active games
+    uint32[] openGames; // list of active games' id's
     mapping(uint32 => Game) gamesData; // data containers
     uint32 lastGameIdx;
 
@@ -72,7 +72,7 @@ contract DipDappDoe {
 
     // OPERATIONS
 
-    function createGame(string randomNumberHash, string nick) public payable returns (uint32 gameIdx) {
+    function createGame(bytes32 randomNumberHash, string nick) public payable returns (uint32 gameIdx) {
         require(lastGameIdx + 1 > lastGameIdx);
 
         gamesData[lastGameIdx].index = openGames.length;
@@ -105,27 +105,29 @@ contract DipDappDoe {
         emit GameAccepted(gameIdx);
     }
 
-    function confirmGame(uint32 gameIdx, uint8 originalRandomNumber, string originalSalt) public {
+    function confirmGame(uint32 gameIdx, uint8 revealedRandomNumber, string revealedSalt) public {
         require(gameIdx < lastGameIdx);
         require(gamesData[gameIdx].players[0] == msg.sender);
         require(gamesData[gameIdx].players[1] != 0x0);
         require(gamesData[gameIdx].status == 0);
 
-
-        // TODO Compare hashes directly, no extra hashing
-        string memory hash = saltedHash(originalRandomNumber, originalSalt);
-        if(keccak256(hash) != keccak256(gamesData[gameIdx].creatorHash)){
+        bytes32 computedHash = saltedHash(revealedRandomNumber, revealedSalt);
+        if(computedHash != gamesData[gameIdx].creatorHash){
             gamesData[gameIdx].status = 12;
+            emit GameEnded(gameIdx);
             return;
         }
 
         gamesData[gameIdx].lastTransactions[0] = now;
 
-        if((originalRandomNumber ^ gamesData[gameIdx].guestRandomNumber) % 2 == 0){
+        // Define the starting player
+        if((revealedRandomNumber ^ gamesData[gameIdx].guestRandomNumber) % 2 == 0){
             gamesData[gameIdx].status = 1;
+            emit GameStarted(gameIdx);
         }
         else {
             gamesData[gameIdx].status = 2;
+            emit GameStarted(gameIdx);
         }
     }
 
@@ -138,7 +140,7 @@ contract DipDappDoe {
     }
 
     // PUBLIC HELPER FUNCTIONS
-    function saltedHash(uint8 randomNumber, string salt) public pure returns (string) {
+    function saltedHash(uint8 randomNumber, string salt) public pure returns (bytes32) {
         return LibString.saltedHash(randomNumber, salt);
     }
 

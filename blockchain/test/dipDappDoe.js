@@ -337,13 +337,14 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should confirm a valid game for player 1", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        var creationWatcher = gamesInstance.GameCreated();
+        var startingWatcher = gamesInstance.GameStarted();
 
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
 
-        const emittedEvents = await eventWatcher.get();
-        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        const creationEvents = await creationWatcher.get();
+        let gameIdx = creationEvents[0].args.gameIdx.toNumber();
 
         await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
 
@@ -356,6 +357,14 @@ contract('DipDappDoe', function (accounts) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: accounts[0]});
         
+        const startingEvents = await startingWatcher.get();
+        gameIdx = startingEvents[0].args.gameIdx.toNumber();
+
+        assert.isOk(startingEvents, "Events should be an array");
+        assert.equal(startingEvents.length, 1, "There should be one started game event");
+        assert.isOk(startingEvents[0], "There should be one started game event");
+        assert.equal(startingEvents[0].args.gameIdx.toNumber(), gameIdx, "The game should have the last gameIdx");
+
         // 100 ^ 200 is even => player 1 should start
         let [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
@@ -381,13 +390,14 @@ contract('DipDappDoe', function (accounts) {
     });
     
     it("should confirm a valid game for player 2", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        var creationWatcher = gamesInstance.GameCreated();
+        var startingWatcher = gamesInstance.GameStarted();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
 
-        const emittedEvents = await eventWatcher.get();
-        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        const creationEvents = await creationWatcher.get();
+        let gameIdx = creationEvents[0].args.gameIdx.toNumber();
 
         await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
 
@@ -400,6 +410,14 @@ contract('DipDappDoe', function (accounts) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: accounts[0]});
         
+        const startingEvents = await startingWatcher.get();
+        gameIdx = startingEvents[0].args.gameIdx.toNumber();
+
+        assert.isOk(startingEvents, "Events should be an array");
+        assert.equal(startingEvents.length, 1, "There should be one started game event");
+        assert.isOk(startingEvents[0], "There should be one started game event");
+        assert.equal(startingEvents[0].args.gameIdx.toNumber(), gameIdx, "The game should have the last gameIdx");
+
         // 123 ^ 200 is odd => player 2 should start
         let [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());

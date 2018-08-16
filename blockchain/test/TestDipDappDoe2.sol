@@ -19,7 +19,7 @@ contract TestDipDappDoe2 {
         string memory nick1;
         string memory nick2;
 
-        string memory hash = gamesInstance.saltedHash(123, "my salt goes here");
+        bytes32 hash = gamesInstance.saltedHash(123, "my salt goes here");
         uint32 gameIdx = gamesInstance.createGame(hash, "John");
         gamesInstance.acceptGame(gameIdx, 234, "Mary");
 

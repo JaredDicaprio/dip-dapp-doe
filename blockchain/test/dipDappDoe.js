@@ -316,7 +316,7 @@ contract('DipDappDoe', function (accounts) {
         }
     });
 
-    it("should reject confirming a game if the hash does not match with the revealed values", async function () {
+    it("should give the game for the second user if the hash does not match with the revealed values", async function () {
         var eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
@@ -327,29 +327,13 @@ contract('DipDappDoe', function (accounts) {
 
         await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: accounts[1]});
         
-        try {
-            await gamesInstance.confirmGame(gameIdx, 124, "initial salt", {from: accounts[0]});
-            assert.fail("The transaction should have thrown an error");
-        }
-        catch (err) {
-            assert.include(err.message, "revert", "The transaction should be reverted");
-        }
-
-        try {
-            await gamesInstance.confirmGame(gameIdx, 123, "modified salt", {from: accounts[0]});
-            assert.fail("The transaction should have thrown an error");
-        }
-        catch (err) {
-            assert.include(err.message, "revert", "The transaction should be reverted");
-        }
-
-        try {
-            await gamesInstance.confirmGame(gameIdx, 124, "modified salt", {from: accounts[0]});
-            assert.fail("The transaction should have thrown an error");
-        }
-        catch (err) {
-            assert.include(err.message, "revert", "The transaction should be reverted");
-        }
+        await gamesInstance.confirmGame(gameIdx, 124, "initial salt", {from: accounts[0]});
+        
+        // 123 != 124 => player 2 should be the winner
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board should be empty");
+        assert.equal(status.toNumber(), 12, "Player 2 should be the winner");
     });
 
     it("should confirm a valid game for player 1", async function () {
@@ -363,16 +347,17 @@ contract('DipDappDoe', function (accounts) {
 
         await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
 
-        const [created, lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
+        let [created, lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
         assert.isAbove(lastTransaction1pre.toNumber(), 0, "The last timestamp of player 1 should be set");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: accounts[0]});
         
         // 100 ^ 200 is even => player 1 should start
-        const [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
+        let [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
         assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board should be empty");
         assert.equal(status.toNumber(), 1, "Player 1 should be able to start");
@@ -385,7 +370,7 @@ contract('DipDappDoe', function (accounts) {
         let lastTransaction1post;
         [created, lastTransaction1post, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
-        assert.isAbove(lastTransaction1post.toNumber(), lastTransaction1pre.toNumber(), "The last timestamp of player 1 should be set");
+        assert.isAbove(lastTransaction1post.toNumber(), lastTransaction1pre.toNumber(), "The last timestamp of player 1 should be newer");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
@@ -406,16 +391,17 @@ contract('DipDappDoe', function (accounts) {
 
         await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
 
-        const [created, lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
+        let [created, lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
         assert.isAbove(lastTransaction1pre.toNumber(), 0, "The last timestamp of player 1 should be set");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: accounts[0]});
         
         // 123 ^ 200 is odd => player 2 should start
-        const [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
+        let [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
         assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board should be empty");
         assert.equal(status.toNumber(), 2, "Player 2 should be able to start");
@@ -428,7 +414,7 @@ contract('DipDappDoe', function (accounts) {
         let lastTransaction1post;
         [created, lastTransaction1post, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
-        assert.isAbove(lastTransaction1post.toNumber(), lastTransaction1pre.toNumber(), "The last timestamp of player 1 should be set");
+        assert.isAbove(lastTransaction1post.toNumber(), lastTransaction1pre.toNumber(), "The last timestamp of player 1 should be newer");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
@@ -455,7 +441,7 @@ contract('DipDappDoe', function (accounts) {
             assert.fail("The transaction should have thrown an error");
         }
         catch (err) {
-            assert.include(err.message, "revert", "The transaction should be reverted");
+            assert.include(err.message, "revert", "The transaction should have been reverted. Instead, the error was: " + err.message);
         }
     });
 
@@ -480,7 +466,26 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should reject confirming a game if it has already ended", async function () {
-        assert.fail("Unimplemented");
+        var eventWatcher = gamesInstance.GameCreated();
+
+        let hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
+
+        const emittedEvents = await eventWatcher.get();
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+
+        await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: accounts[1]});
+        
+        // now the player 2 will win, and the game will end
+        await gamesInstance.confirmGame(gameIdx, 124, "initial salt", {from: accounts[0]});
+        
+        try {
+            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: accounts[0]});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
     });
     
 });

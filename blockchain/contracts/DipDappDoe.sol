@@ -105,8 +105,28 @@ contract DipDappDoe {
         emit GameAccepted(gameIdx);
     }
 
-    function confirmGame(uint32 gameIdx, uint8 originalRandomNumber, bytes32 originalSalt) public {
-        revert();
+    function confirmGame(uint32 gameIdx, uint8 originalRandomNumber, string originalSalt) public {
+        require(gameIdx < lastGameIdx);
+        require(gamesData[gameIdx].players[0] == msg.sender);
+        require(gamesData[gameIdx].players[1] != 0x0);
+        require(gamesData[gameIdx].status == 0);
+
+
+        // TODO Compare hashes directly, no extra hashing
+        string memory hash = saltedHash(originalRandomNumber, originalSalt);
+        if(keccak256(hash) != keccak256(gamesData[gameIdx].creatorHash)){
+            gamesData[gameIdx].status = 12;
+            return;
+        }
+
+        gamesData[gameIdx].lastTransactions[0] = now;
+
+        if((originalRandomNumber ^ gamesData[gameIdx].guestRandomNumber) % 2 == 0){
+            gamesData[gameIdx].status = 1;
+        }
+        else {
+            gamesData[gameIdx].status = 2;
+        }
     }
 
     function markPosition(uint32 gameIdx, uint8 cell) public {

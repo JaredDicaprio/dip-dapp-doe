@@ -6,7 +6,7 @@ import "truffle/DeployedAddresses.sol";
 import "../contracts/DipDappDoe.sol";
 import "../contracts/LibString.sol";
 
-contract TestDipDappDoe {
+contract TestDipDappDoe1 {
     DipDappDoe gamesInstance;
 
     constructor() public {
@@ -90,7 +90,7 @@ contract TestDipDappDoe {
         uint32[] memory openGames = gamesInstance.getOpenGames();
         Assert.equal(openGames.length, 1, "One game should be available");
 
-        gamesInstance.acceptGame(openGames[0], 0, "Mary");
+        gamesInstance.acceptGame(openGames[0], 234, "Mary");
 
         openGames = gamesInstance.getOpenGames();
         Assert.equal(openGames.length, 1, "One game should still exist");
@@ -115,6 +115,5 @@ contract TestDipDappDoe {
         Assert.isAbove(created, 0, "Creation date should be set");
         Assert.isAbove(lastTransaction1, 0, "The first player's transaction timestamp should be set");
         Assert.isAbove(lastTransaction2, 0, "The second player's transaction timestamp should be set");
-
     }
 }

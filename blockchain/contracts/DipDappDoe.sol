@@ -27,6 +27,7 @@ contract DipDappDoe {
     uint32[] openGames; // list of active games' id's
     mapping(uint32 => Game) gamesData; // data containers
     uint32 lastGameIdx;
+    uint16 public timeout;
 
     // EVENTS
 
@@ -35,6 +36,15 @@ contract DipDappDoe {
     event GameStarted(uint32 indexed gameIdx);
     event PositionMarked(uint32 indexed gameIdx);
     event GameEnded(uint32 indexed gameIdx);
+
+    constructor(uint16 givenTimeout) public {
+        if(givenTimeout != 0) {
+            timeout = givenTimeout;
+        }
+        else {
+            timeout = 10 minutes;
+        }
+    }
 
     // CALLABLE
 

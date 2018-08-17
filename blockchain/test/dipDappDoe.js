@@ -9,6 +9,9 @@ contract('DipDappDoe', function (accounts) {
         assert.isOk(gamesInstance, "instance should not be null");
         assert.equal(typeof gamesInstance, "object", "Instance should be an object");
 
+        const timeout = await gamesInstance.timeout.call();
+        assert.equal(timeout.toNumber(), 2, "The base timeout to test should be set to 2");
+
         libStringInstance = await LibString.deployed();
         assert.isOk(libStringInstance, "instance should not be null");
         assert.equal(typeof libStringInstance, "object", "Instance should be an object");
@@ -274,6 +277,10 @@ contract('DipDappDoe', function (accounts) {
         catch (err) {
             assert.include(err.message, "revert", "The transaction should be reverted");
         }
+    });
+
+    it("should remove the game from the list of available games", async function(){
+        assert.fail("Untested");
     });
 
     // DipDappDoe.confirmGame
@@ -1532,5 +1539,18 @@ contract('DipDappDoe', function (accounts) {
     });
 
     // DipDappDoe.withdraw
+
+    it("should reject withdrawals from a non existing game");
+    it("should reject withdrawals from an unstarted game");
+    it("should reject withdrawals from an extraneous user");
+    it("should reject withdrawals from an active game and recent transactions");
+    it("should reject withdrawals from a game with no money");
+    it("should reject withdrawals from the game loser");
+    
+    it("should accept the withdrawal from both users in case of draw");
+    it("should accept the withdrawal from the game winner");
+    
+    it("should accept only one legitimate withdrawal and reject the rest");
+    it("should allow to withdraw and end the game if the opponent didn't play after a while");
 
 });

@@ -14,7 +14,6 @@ contract DipDappDoe {
         uint8 status;
         
         uint amount;  // amount of money each user has sent
-        uint created; // timestamp
 
         address[2] players;
         string[2] nicks;
@@ -64,9 +63,8 @@ contract DipDappDoe {
     }
 
     function getGameTimestamps(uint32 gameIdx) public view 
-    returns (uint created, uint lastTransaction1, uint lastTransaction2) {
+    returns (uint lastTransaction1, uint lastTransaction2) {
         return (
-            gamesData[gameIdx].created,
             gamesData[gameIdx].lastTransactions[0],
             gamesData[gameIdx].lastTransactions[1]
         );
@@ -88,7 +86,6 @@ contract DipDappDoe {
         gamesData[lastGameIdx].index = openGames.length;
         gamesData[lastGameIdx].creatorHash = randomNumberHash;
         gamesData[lastGameIdx].amount = msg.value;
-        gamesData[lastGameIdx].created = now;
         gamesData[lastGameIdx].nicks[0] = nick;
         gamesData[lastGameIdx].players[0] = msg.sender;
         gamesData[lastGameIdx].lastTransactions[0] = now;

@@ -72,8 +72,7 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(nick2, "", "The player 2 should be empty");
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
-        let [created, lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
+        let [lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1.toNumber(), 0, "The last timestamp of player 1 should be set");
         assert.equal(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be empty");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
@@ -115,8 +114,7 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(nick2, "", "The player 2 should be empty");
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
-        let [created, lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
+        let [lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1.toNumber(), 0, "The last timestamp of player 1 should be set");
         assert.equal(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be empty");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
@@ -223,8 +221,7 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(nick2, "Kathy", "The player 2 should be Kathy");
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
-        [created, lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
+        [lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1.toNumber(), 0, "The last timestamp of player 1 should be set");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
@@ -361,8 +358,7 @@ contract('DipDappDoe', function (accounts) {
 
         await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
 
-        let [created, lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
+        let [lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1pre.toNumber(), 0, "The last timestamp of player 1 should be set");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
@@ -390,8 +386,7 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
         let lastTransaction1post;
-        [created, lastTransaction1post, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
+        [lastTransaction1post, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1post.toNumber(), lastTransaction1pre.toNumber(), "The last timestamp of player 1 should be newer");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
@@ -414,8 +409,7 @@ contract('DipDappDoe', function (accounts) {
 
         await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
 
-        let [created, lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
+        let [lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1pre.toNumber(), 0, "The last timestamp of player 1 should be set");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
@@ -443,8 +437,7 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
         let lastTransaction1post;
-        [created, lastTransaction1post, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(created.toNumber(), 0, "The creation timestamp should be set");
+        [lastTransaction1post, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1post.toNumber(), lastTransaction1pre.toNumber(), "The last timestamp of player 1 should be newer");
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");

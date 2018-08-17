@@ -44,7 +44,6 @@ contract TestDipDappDoe1 {
         uint amount;
         string memory nick1;
         string memory nick2;
-        uint created;
         uint lastTransaction1;
         uint lastTransaction2;
 
@@ -71,8 +70,7 @@ contract TestDipDappDoe1 {
         Assert.equal(nick1, "John", "The nick should be John");
         Assert.isEmpty(nick2, "Nick2 should be empty");
 
-        (created, lastTransaction1, lastTransaction2) = gamesInstance.getGameTimestamps(gameIdx);
-        Assert.isAbove(created, 0, "Creation date should be set");
+        (lastTransaction1, lastTransaction2) = gamesInstance.getGameTimestamps(gameIdx);
         Assert.isAbove(lastTransaction1, 0, "The first player's transaction timestamp should be set");
         Assert.equal(lastTransaction2, 0, "The second player's transaction timestamp should be empty");
     }
@@ -83,7 +81,6 @@ contract TestDipDappDoe1 {
         uint amount;
         string memory nick1;
         string memory nick2;
-        uint created;
         uint lastTransaction1;
         uint lastTransaction2;
 
@@ -111,8 +108,7 @@ contract TestDipDappDoe1 {
         Assert.equal(nick1, "John", "The nick should be John");
         Assert.equal(nick2, "Mary", "The nick should be Mary");
 
-        (created, lastTransaction1, lastTransaction2) = gamesInstance.getGameTimestamps(openGames[0]);
-        Assert.isAbove(created, 0, "Creation date should be set");
+        (lastTransaction1, lastTransaction2) = gamesInstance.getGameTimestamps(openGames[0]);
         Assert.isAbove(lastTransaction1, 0, "The first player's transaction timestamp should be set");
         Assert.isAbove(lastTransaction2, 0, "The second player's transaction timestamp should be set");
     }

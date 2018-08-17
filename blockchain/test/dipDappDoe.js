@@ -485,13 +485,13 @@ contract('DipDappDoe', function (accounts) {
 
     it("should reject confirming a game if it has already ended", async function () {
         var eventWatcher = gamesInstance.GameCreated();
-
+        
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
-
+        
         const emittedEvents = await eventWatcher.get();
         const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
-
+        
         await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: accounts[1]});
         
         // now the player 2 will win, and the game will end
@@ -505,5 +505,960 @@ contract('DipDappDoe', function (accounts) {
             assert.include(err.message, "revert", "The transaction should be reverted");
         }
     });
+
+    it("should register a user's valid move and change the turn", async function(){
+        const eventWatcher = gamesInstance.GameCreated();
+        const player1 = accounts[0];
+        const player2 = accounts[1];
+        
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        // ------ GAME 1 ------
+
+        // 1 0 0
+        // 0 0 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        // 1 0 2
+        // 0 0 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // 1 0 2
+        // 1 0 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        // 1 0 2
+        // 1 0 2
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 5, {from: player2});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 0, 2, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // 1 0 2
+        // 1 0 2
+        // 1 0 0
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 0, 2, 1, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+        // ------------------------------
+
+        hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
+        
+        // ------ GAME 2 ------
+
+        // 2 0 0
+        // 0 0 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 0, {from: player2});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // 2 0 1
+        // 0 0 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 2, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 0, 1, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        // 2 0 1
+        // 0 2 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 0, 1, 0, 2, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // 2 0 1
+        // 0 2 1
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 0, 1, 0, 2, 1, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        // 2 0 1
+        // 0 2 1
+        // 0 0 2
+        await gamesInstance.markPosition(gameIdx, 8, {from: player2});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 0, 1, 0, 2, 1, 0, 0, 2], "The board does not match");
+        assert.equal(status.toNumber(), 12, "The game should be won by player 2");
+
+        // ------------------------------
+
+        hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        // ------ GAME 3 ------
+
+        // 0 1 0
+        // 0 0 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 1, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 1, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        // 0 1 2
+        // 0 0 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 1, 2, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // 0 1 2
+        // 0 1 0
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 1, 2, 0, 1, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        // 0 1 2
+        // 0 1 2
+        // 0 0 0
+        await gamesInstance.markPosition(gameIdx, 5, {from: player2});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 1, 2, 0, 1, 2, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // 0 1 2
+        // 0 1 2
+        // 0 1 0
+        await gamesInstance.markPosition(gameIdx, 7, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 1, 2, 0, 1, 2, 0, 1, 0], "The board does not match");
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+    });
     
+    it("should reject marks beyond the board's range", async function(){
+        var eventWatcher = gamesInstance.GameCreated();
+        const player1 = accounts[0];
+        const player2 = accounts[1];
+        
+        let hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        const emittedEvents = await eventWatcher.get();
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
+        
+        try {
+            await gamesInstance.markPosition(gameIdx, 9, {from: player2}); // invalid move
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        await gamesInstance.markPosition(gameIdx, 8, {from: player2}); // valid move
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 2], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 100, {from: player1}); // invalid move
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 2], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 500, {from: player1}); // invalid move
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 2], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+    });
+    
+    it("should reject marks on non existing, not started or already ended games", async function(){
+        const eventWatcher = gamesInstance.GameCreated();
+        const player1 = accounts[0];
+        const player2 = accounts[1];
+        
+        // Non existing
+        try {
+            await gamesInstance.markPosition(12345678, 9, {from: player1}); // invalid move
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        let [cells, status] = await gamesInstance.getGameInfo(12345678);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 0, "The game should not be started");
+
+        // NOT ACCEPTED
+        let hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
+        
+        const emittedEvents = await eventWatcher.get();
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        try {
+            await gamesInstance.markPosition(gameIdx, 5, {from: player1}); // invalid move
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 0, "The game should not be started");
+
+        // NOT CONFIRMED
+        hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: player2});
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 5, {from: player1}); // invalid move
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 0, "The game should not be started");
+
+        // ENDED
+        hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 1, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 2, 0, 1, 2, 0, 1, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 7, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 8, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+    });
+    
+    it("should reject marks from someone other than the expected player", async function(){
+        const eventWatcher = gamesInstance.GameCreated();
+        const player1 = accounts[0];
+        const player2 = accounts[1];
+        const randomUser = accounts[5];
+        
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        // game is on player 1
+        
+        try {
+            await gamesInstance.markPosition(gameIdx, 0, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 0, {from: randomUser});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1}); // valid
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // game is on player 2
+        
+        try {
+            await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 5, {from: randomUser});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // game is on player 1
+        
+        try {
+            await gamesInstance.markPosition(gameIdx, 0, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 0, {from: randomUser});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        // game is on player 2
+        
+        try {
+            await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 5, {from: randomUser});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        await gamesInstance.markPosition(gameIdx, 5, {from: player2});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 0, 2, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // game is on player 1
+        
+        try {
+            await gamesInstance.markPosition(gameIdx, 0, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 0, {from: randomUser});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 0, 2, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+        
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 0, 2, 1, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+    });
+    
+    it("should reject marking already marked positions", async function(){
+        const eventWatcher = gamesInstance.GameCreated();
+        const player1 = accounts[0];
+        const player2 = accounts[1];
+        
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // Test on:
+
+        // 1 1 2
+        // 2 1 1
+        // 2 0 0
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 1, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 1, 2, 2, 1, 1, 2, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 0, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 1, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 3, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 5, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 6, {from: player2});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 1, 2, 2, 1, 1, 2, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
+
+        // Now mark [7]
+
+        // 1 1 2
+        // 2 1 1
+        // 2 2 0
+
+        await gamesInstance.markPosition(gameIdx, 7, {from: player2});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 1, 2, 2, 1, 1, 2, 2, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 1, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 2, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+
+        try {
+            await gamesInstance.markPosition(gameIdx, 7, {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) { assert.include(err.message, "revert", "The transaction should be reverted"); }
+    });
+
+    it("should detect that the game ends in draw", async function (){
+        const eventWatcher = gamesInstance.GameCreated();
+        const player1 = accounts[0];
+        const player2 = accounts[1];
+        
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // 122
+        // 211
+        // 212
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 8, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 7, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 1, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 1, 2, 2, 1, 1, 2, 2, 1], "The board does not match");
+        assert.equal(status.toNumber(), 10, "The game should end in draw");
+
+        // --------------------------
+
+        hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+
+        // 112
+        // 211
+        // 122
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 8, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 1, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 7, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 1, 2, 2, 1, 1, 1, 2, 2], "The board does not match");
+        assert.equal(status.toNumber(), 10, "The game should end in draw");
+
+    });
+    
+    it("should detect that a user wins the game", async function (){
+        const eventWatcher = gamesInstance.GameCreated();
+        const player1 = accounts[0];
+        const player2 = accounts[1];
+        
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        // 102
+        // 120
+        // 100
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 2, 0, 1, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+        // --------------------------
+
+        hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
+        
+        // 222
+        // 000
+        // 110
+
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 1, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 7, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 0, {from: player2});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 2, 2, 0, 0, 0, 1, 1, 0], "The board does not match");
+        assert.equal(status.toNumber(), 12, "The game should be won by player 2");
+
+        // --------------------------
+
+        hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        // 201
+        // 201
+        // 001
+
+        await gamesInstance.markPosition(gameIdx, 2, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 0, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 8, {from: player1});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 0, 1, 2, 0, 1, 0, 0, 1], "The board does not match");
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+        // --------------------------
+
+        hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
+        
+        // 110
+        // 000
+        // 222
+
+        await gamesInstance.markPosition(gameIdx, 6, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 7, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 1, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 8, {from: player2});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 2, 2, 0, 0, 0, 1, 1, 0], "The board does not match");
+        assert.equal(status.toNumber(), 12, "The game should be won by player 2");
+
+        // --------------------------
+
+        hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        // 102
+        // 012
+        // 001
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 5, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 8, {from: player1});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 0, 1, 2, 0, 0, 1], "The board does not match");
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+        // --------------------------
+
+        hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
+        
+        // 102
+        // 120
+        // 200
+
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player2});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [1, 0, 2, 1, 2, 0, 2, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 12, "The game should be won by player 2");
+
+        // --------------------------
+
+        hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+        
+        // 220
+        // 111
+        // 000
+
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 0, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 1, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [2, 2, 0, 1, 1, 1, 0, 0, 0], "The board does not match");
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+        // --------------------------
+
+        hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "James", {from: player1});
+        
+        emittedEvents = await eventWatcher.get();
+        gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
+        
+        // 021
+        // 021
+        // 020
+
+        await gamesInstance.markPosition(gameIdx, 1, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 7, {from: player2});
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        cells = cells.map(n => n.toNumber());
+        assert.deepEqual(cells, [0, 2, 1, 0, 2, 1, 0, 2, 0], "The board does not match");
+        assert.equal(status.toNumber(), 12, "The game should be won by player 2");
+
+    });
 });

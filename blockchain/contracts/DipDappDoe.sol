@@ -121,7 +121,7 @@ contract DipDappDoe {
         gamesData[gameIdx].lastTransactions[0] = now;
 
         // Define the starting player
-        if((revealedRandomNumber ^ gamesData[gameIdx].guestRandomNumber) % 2 == 0){
+        if((revealedRandomNumber ^ gamesData[gameIdx].guestRandomNumber) & 0x01 == 0){
             gamesData[gameIdx].status = 1;
             emit GameStarted(gameIdx);
         }

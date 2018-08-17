@@ -98,6 +98,5 @@ contract TestDipDappDoe3 {
         Assert.equal(uint(cells[7]), 0, "The board should be empty");
         Assert.equal(uint(cells[8]), 0, "The board should be empty");
         Assert.equal(uint(status), 12, "The game should be won by player 2");
-
     }
 }

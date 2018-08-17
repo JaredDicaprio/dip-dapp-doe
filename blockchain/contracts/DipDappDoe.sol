@@ -132,7 +132,67 @@ contract DipDappDoe {
     }
 
     function markPosition(uint32 gameIdx, uint8 cell) public {
-        revert();
+        require(gameIdx < lastGameIdx);
+        require(cell <= 8);
+
+        uint8[9] storage cells = gamesData[gameIdx].cells;
+        require(cells[cell] == 0);
+
+        if(gamesData[gameIdx].status == 1){
+            require(gamesData[gameIdx].players[0] == msg.sender);
+
+            cells[cell] = 1;
+        }
+        else if(gamesData[gameIdx].status == 2){
+            require(gamesData[gameIdx].players[1] == msg.sender);
+            
+            cells[cell] = 2;
+        }
+        else {
+            revert();
+        }
+
+        emit PositionMarked(gameIdx);
+
+        // Board indexes:
+        //    0 1 2
+        //    3 4 5
+        //    6 7 8
+
+        // Detect a winner:
+        // 0x01 & 0x01 & 0x01 != 0 => WIN
+        // 0x02 & 0x02 & 0x02 != 0 => WIN
+        
+        // 0x01 & 0x01 & 0x02 == 0 => Diverse row
+        // 0x01 & 0x02 & 0x02 == 0
+        // ...
+
+        if((cells[0] & cells [1] & cells [2] != 0x0) || (cells[3] & cells [4] & cells [5] != 0x0) ||
+        (cells[6] & cells [7] & cells [8] != 0x0) || (cells[0] & cells [3] & cells [6] != 0x0) ||
+        (cells[1] & cells [4] & cells [7] != 0x0) || (cells[2] & cells [5] & cells [8] != 0x0) ||
+        (cells[0] & cells [4] & cells [8] != 0x0) || (cells[2] & cells [4] & cells [6] != 0x0)) {
+            // winner
+            gamesData[gameIdx].status = 10 + cells[cell];  // 11 or 12
+            emit GameEnded(gameIdx);
+        }
+        else if(cells[0] != 0x0 && cells[1] != 0x0 && cells[2] != 0x0 && 
+            cells[3] != 0x0 && cells[4] != 0x0 && cells[5] != 0x0 && cells[6] != 0x0 && 
+            cells[7] != 0x0 && cells[8] != 0x0) {
+            // draw
+            gamesData[gameIdx].status = 10;
+            emit GameEnded(gameIdx);
+        }
+        else {
+            if(cells[cell] == 1){
+                gamesData[gameIdx].status = 2;
+            }
+            else if(cells[cell] == 2){
+                gamesData[gameIdx].status = 1;
+            }
+            else {
+                revert();
+            }
+        }
     }
 
     function withdraw(uint32 gameIdx) public {

@@ -38,6 +38,8 @@ contract('DipDappDoe', function (accounts) {
         assert.notEqual(hash2, hash3, "Different numbers and salt should produce different hashes");
     });
 
+    // DipDappDoe.createGame
+
     it("should create a game with no money", async function () {
         var eventWatcher = gamesInstance.GameCreated();
         let hash = await libStringInstance.saltedHash.call(123, "my salt 1");
@@ -121,6 +123,8 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(player2, "0x0000000000000000000000000000000000000000", "The address of player 2 should be empty");
         assert.deepEqual(rest3, [], "The response should have 2 elements");
     });
+
+    // DipDappDoe.acceptGame
 
     it("should reject accepting a non-existing game", async function () {
         try {
@@ -271,6 +275,8 @@ contract('DipDappDoe', function (accounts) {
             assert.include(err.message, "revert", "The transaction should be reverted");
         }
     });
+
+    // DipDappDoe.confirmGame
 
     it("should reject confirming a non existing game", async function () {
         try {
@@ -506,15 +512,18 @@ contract('DipDappDoe', function (accounts) {
         }
     });
 
-    it("should register a user's valid move and change the turn", async function(){
-        const eventWatcher = gamesInstance.GameCreated();
+    // DipDappDoe.markPosition
+
+    it("should register a user's valid move, emit an event and change the turn", async function(){
+        const createEventWatcher = gamesInstance.GameCreated();
+        const markEventWatcher = gamesInstance.PositionMarked();
         const player1 = accounts[0];
         const player2 = accounts[1];
         
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
         
-        let emittedEvents = await eventWatcher.get();
+        let emittedEvents = await createEventWatcher.get();
         let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
         
         await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
@@ -532,6 +541,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [1, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 2, "The game should be for player 2");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 1 0 2
         // 0 0 0
         // 0 0 0
@@ -542,6 +555,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [1, 0, 2, 0, 0, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 1, "The game should be for player 1");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 1 0 2
         // 1 0 0
         // 0 0 0
@@ -552,6 +569,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [1, 0, 2, 1, 0, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 2, "The game should be for player 2");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 1 0 2
         // 1 0 2
         // 0 0 0
@@ -562,6 +583,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [1, 0, 2, 1, 0, 2, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 1, "The game should be for player 1");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 1 0 2
         // 1 0 2
         // 1 0 0
@@ -572,12 +597,16 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [1, 0, 2, 1, 0, 2, 1, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 11, "The game should be won by player 1");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // ------------------------------
 
         hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
         
-        emittedEvents = await eventWatcher.get();
+        emittedEvents = await createEventWatcher.get();
         gameIdx = emittedEvents[0].args.gameIdx.toNumber();
         
         await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
@@ -595,6 +624,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [2, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 1, "The game should be for player 1");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 2 0 1
         // 0 0 0
         // 0 0 0
@@ -605,6 +638,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [2, 0, 1, 0, 0, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 2, "The game should be for player 2");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 2 0 1
         // 0 2 0
         // 0 0 0
@@ -615,6 +652,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [2, 0, 1, 0, 2, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 1, "The game should be for player 1");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 2 0 1
         // 0 2 1
         // 0 0 0
@@ -625,6 +666,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [2, 0, 1, 0, 2, 1, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 2, "The game should be for player 2");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 2 0 1
         // 0 2 1
         // 0 0 2
@@ -635,12 +680,16 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [2, 0, 1, 0, 2, 1, 0, 0, 2], "The board does not match");
         assert.equal(status.toNumber(), 12, "The game should be won by player 2");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // ------------------------------
 
         hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
         
-        emittedEvents = await eventWatcher.get();
+        emittedEvents = await createEventWatcher.get();
         gameIdx = emittedEvents[0].args.gameIdx.toNumber();
         
         await gamesInstance.acceptGame(gameIdx, 234, "Jane", {from: player2});
@@ -658,6 +707,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [0, 1, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 2, "The game should be for player 2");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 0 1 2
         // 0 0 0
         // 0 0 0
@@ -668,6 +721,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [0, 1, 2, 0, 0, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 1, "The game should be for player 1");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 0 1 2
         // 0 1 0
         // 0 0 0
@@ -678,6 +735,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [0, 1, 2, 0, 1, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 2, "The game should be for player 2");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 0 1 2
         // 0 1 2
         // 0 0 0
@@ -688,6 +749,10 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(cells, [0, 1, 2, 0, 1, 2, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 1, "The game should be for player 1");
 
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
+        
         // 0 1 2
         // 0 1 2
         // 0 1 0
@@ -697,6 +762,10 @@ contract('DipDappDoe', function (accounts) {
         cells = cells.map(n => n.toNumber());
         assert.deepEqual(cells, [0, 1, 2, 0, 1, 2, 0, 1, 0], "The board does not match");
         assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+        emittedEvents = await markEventWatcher.get();
+        assert.equal(emittedEvents.length, 1, "There should be a new marked event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
     });
     
     it("should reject marks beyond the board's range", async function(){
@@ -783,8 +852,8 @@ contract('DipDappDoe', function (accounts) {
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: player1});
         
-        const emittedEvents = await eventWatcher.get();
-        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
         
         try {
             await gamesInstance.markPosition(gameIdx, 5, {from: player1}); // invalid move
@@ -903,7 +972,7 @@ contract('DipDappDoe', function (accounts) {
         [cells, status] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
         assert.deepEqual(cells, [1, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
-        assert.equal(status.toNumber(), 1, "The game should be for player 1");
+        assert.equal(status.toNumber(), 2, "The game should be for player 2");
 
         // game is on player 2
         
@@ -1195,7 +1264,7 @@ contract('DipDappDoe', function (accounts) {
 
         // 122
         // 211
-        // 212
+        // 112
 
         await gamesInstance.markPosition(gameIdx, 0, {from: player1});
         await gamesInstance.markPosition(gameIdx, 2, {from: player2});
@@ -1209,7 +1278,7 @@ contract('DipDappDoe', function (accounts) {
 
         [cells, status] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
-        assert.deepEqual(cells, [1, 1, 2, 2, 1, 1, 2, 2, 1], "The board does not match");
+        assert.deepEqual(cells, [1, 2, 2, 2, 1, 1, 1, 1, 2], "The board does not match");
         assert.equal(status.toNumber(), 10, "The game should end in draw");
 
         // --------------------------
@@ -1353,7 +1422,7 @@ contract('DipDappDoe', function (accounts) {
 
         [cells, status] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
-        assert.deepEqual(cells, [2, 2, 2, 0, 0, 0, 1, 1, 0], "The board does not match");
+        assert.deepEqual(cells, [1, 1, 0, 0, 0, 0, 2, 2, 2], "The board does not match");
         assert.equal(status.toNumber(), 12, "The game should be won by player 2");
 
         // --------------------------
@@ -1461,4 +1530,7 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(status.toNumber(), 12, "The game should be won by player 2");
 
     });
+
+    // DipDappDoe.withdraw
+
 });

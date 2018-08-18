@@ -6,7 +6,7 @@ import "./LibString.sol";
 contract DipDappDoe {
     // DATA
     struct Game {
-        uint index;   // position in openGames[]
+        uint32 index;   // position in openGames[]
         uint8[9] cells;  // [123 / 456 / 789] containing [0 => nobody, 1 => X, 2 => O]
         
         // 0 => not started, 1 => player 1, 2 => player 2
@@ -83,7 +83,7 @@ contract DipDappDoe {
     function createGame(bytes32 randomNumberHash, string nick) public payable returns (uint32 gameIdx) {
         require(lastGameIdx + 1 > lastGameIdx);
 
-        gamesData[lastGameIdx].index = openGames.length;
+        gamesData[lastGameIdx].index = uint32(openGames.length);
         gamesData[lastGameIdx].creatorHash = randomNumberHash;
         gamesData[lastGameIdx].amount = msg.value;
         gamesData[lastGameIdx].nicks[0] = nick;
@@ -110,6 +110,12 @@ contract DipDappDoe {
         gamesData[gameIdx].lastTransactions[1] = now;
 
         emit GameAccepted(gameIdx);
+
+        // Remove from the available list (unordered)
+        uint32 idxToDelete = gamesData[gameIdx].index;
+        openGames[idxToDelete] = openGames[openGames.length - 1];
+        gamesData[gameIdx].index = idxToDelete;
+        openGames.length--;
     }
 
     function confirmGame(uint32 gameIdx, uint8 revealedRandomNumber, string revealedSalt) public {

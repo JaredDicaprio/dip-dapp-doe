@@ -44,24 +44,24 @@ contract('DipDappDoe', function (accounts) {
     // DipDappDoe.createGame
 
     it("should create a game with no money", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        let eventWatcher = gamesInstance.GameCreated();
         let hash = await libStringInstance.saltedHash.call(123, "my salt 1");
 
         await gamesInstance.createGame(hash, "John");
 
         assert.equal(await web3.eth.getBalance(gamesInstance.address).toNumber(), 0, "The contract should have registered a zero amount of ether owed to the players");
 
-        let gamesIdx = await gamesInstance.getOpenGames.call();
-        gamesIdx = gamesIdx.map(n => n.toNumber());
-        assert.deepEqual(gamesIdx, [0], "Should have one game");
-
         const emittedEvents = await eventWatcher.get();
         assert.isOk(emittedEvents, "Events should be an array");
         assert.equal(emittedEvents.length, 1, "There should be one event");
         assert.isOk(emittedEvents[0], "There should be one event");
         assert.equal(emittedEvents[0].args.gameIdx.toNumber(), 0, "The game should have index zero");
+        
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
 
-        const gameIdx = gamesIdx[0];
+        let gamesIdx = await gamesInstance.getOpenGames.call();
+        gamesIdx = gamesIdx.map(n => n.toNumber());
+        assert.include(gamesIdx, gameIdx, "Should include the new game");
 
         let [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
@@ -84,7 +84,7 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should create a game with money", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        let eventWatcher = gamesInstance.GameCreated();
         let hash = await libStringInstance.saltedHash.call(123, "my salt 1");
 
         await gamesInstance.createGame(hash, "Jane", { value: web3.toWei(0.01, 'ether') });
@@ -92,17 +92,17 @@ contract('DipDappDoe', function (accounts) {
         let balance = await web3.eth.getBalance(gamesInstance.address);
         assert.equal(balance.comparedTo(web3.toWei(0.01, 'ether')), 0, "The contract should have registered 0.01 ether owed to the players");
 
-        let gamesIdx = await gamesInstance.getOpenGames.call();
-        gamesIdx = gamesIdx.map(n => n.toNumber());
-        assert.deepEqual(gamesIdx, [0, 1], "Should have two games");
-
         const emittedEvents = await eventWatcher.get();
         assert.isOk(emittedEvents, "Events should be an array");
         assert.equal(emittedEvents.length, 1, "There should be one event");
         assert.isOk(emittedEvents[0], "There should be one event");
-        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), 1, "The game should have index zero");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), 1, "The game should have index one");
 
-        const gameIdx = gamesIdx[1];
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+
+        let gamesIdx = await gamesInstance.getOpenGames.call();
+        gamesIdx = gamesIdx.map(n => n.toNumber());
+        assert.include(gamesIdx, gameIdx, "Should include the new game");
 
         let [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
@@ -138,17 +138,25 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should reject accepting games with a different amount of money than expected", async function () {
+        let eventWatcher = gamesInstance.GameCreated();
+
         let hash = await libStringInstance.saltedHash.call(123, "my salt 1");
         await gamesInstance.createGame(hash, "Johny", { value: web3.toWei(0.02, 'ether') });
 
         let balance = await web3.eth.getBalance(gamesInstance.address);
         assert.equal(balance.comparedTo(web3.toWei(0.03, 'ether')), 0, "The contract should have registered 0.02 ether owed to the players");
 
+        const emittedEvents = await eventWatcher.get();
+        assert.isOk(emittedEvents, "Events should be an array");
+        assert.equal(emittedEvents.length, 1, "There should be one event");
+        assert.isOk(emittedEvents[0], "There should be one event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), 2, "The game should have index two");
+
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+
         let gamesIdx = await gamesInstance.getOpenGames.call();
         gamesIdx = gamesIdx.map(n => n.toNumber());
-        assert.deepEqual(gamesIdx, [0, 1, 2], "Should have two games");
-
-        const gameIdx = gamesIdx[2];
+        assert.include(gamesIdx, gameIdx, "Should include the new game");
 
         let [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
@@ -170,7 +178,9 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should accept an available game", async function () {
-        var eventWatcher = gamesInstance.GameAccepted();
+        let creationEventWatcher = gamesInstance.GameCreated();
+        let acceptanceEventWatcher = gamesInstance.GameAccepted();
+
         let hash = await libStringInstance.saltedHash.call(123, "my salt 1");
 
         // create game
@@ -179,11 +189,17 @@ contract('DipDappDoe', function (accounts) {
         let balance = await web3.eth.getBalance(gamesInstance.address);
         assert.equal(balance.comparedTo(web3.toWei(0.035, 'ether')), 0, "The contract should have registered 0.005 ether owed to the players");
 
+        let emittedEvents = await creationEventWatcher.get();
+        assert.isOk(emittedEvents, "Events should be an array");
+        assert.equal(emittedEvents.length, 1, "There should be one event");
+        assert.isOk(emittedEvents[0], "There should be one event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), 3, "The game should have index three");
+
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+
         let gamesIdx = await gamesInstance.getOpenGames.call();
         gamesIdx = gamesIdx.map(n => n.toNumber());
-        assert.deepEqual(gamesIdx, [0, 1, 2, 3], "Should have three games");
-
-        const gameIdx = gamesIdx[gamesIdx.length - 1];
+        assert.include(gamesIdx, gameIdx, "Should include the new game");
 
         let [cells, status, amount, nick1, nick2, ...rest] = await gamesInstance.getGameInfo(gameIdx);
         cells = cells.map(n => n.toNumber());
@@ -201,11 +217,7 @@ contract('DipDappDoe', function (accounts) {
         balance = await web3.eth.getBalance(gamesInstance.address);
         assert.equal(balance.comparedTo(web3.toWei(0.04, 'ether')), 0, "The contract should have registered 0.005 more ether owed to the players");
 
-        gamesIdx = await gamesInstance.getOpenGames.call();
-        gamesIdx = gamesIdx.map(n => n.toNumber());
-        assert.deepEqual(gamesIdx, [0, 1, 2, 3], "Should have three games");
-
-        const emittedEvents = await eventWatcher.get();
+        emittedEvents = await acceptanceEventWatcher.get();
         assert.isOk(emittedEvents, "Events should be an array");
         assert.equal(emittedEvents.length, 1, "There should be one accepted game event");
         assert.isOk(emittedEvents[0], "There should be one accepted game event");
@@ -232,20 +244,28 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(rest3, [], "The response should have 2 elements");
     });
 
-    it("should reject accepting an already started game", async function () {
-        var eventWatcher = gamesInstance.GameAccepted();
+    it("should reject accepting an already accepted game", async function () {
+        let creationEventWatcher = gamesInstance.GameCreated();
+        let acceptanceEventWatcher = gamesInstance.GameAccepted();
 
         let hash = await libStringInstance.saltedHash.call(123, "my salt 1");
         await gamesInstance.createGame(hash, "Jim");
 
-        gamesIdx = await gamesInstance.getOpenGames.call();
-        gamesIdx = gamesIdx.map(n => n.toNumber());
-        assert.deepEqual(gamesIdx, [0, 1, 2, 3, 4], "Should have four games");
+        let emittedEvents = await creationEventWatcher.get();
+        assert.isOk(emittedEvents, "Events should be an array");
+        assert.equal(emittedEvents.length, 1, "There should be one event");
+        assert.isOk(emittedEvents[0], "There should be one event");
+        assert.equal(emittedEvents[0].args.gameIdx.toNumber(), 4, "The game should have index four");
 
-        const gameIdx = gamesIdx[gamesIdx.length - 1];
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+
+        let gamesIdx = await gamesInstance.getOpenGames.call();
+        gamesIdx = gamesIdx.map(n => n.toNumber());
+        assert.include(gamesIdx, gameIdx, "Should include the new game");
+
         await gamesInstance.acceptGame(gameIdx, 0, "Dana", { from: accounts[1] });
 
-        const emittedEvents = await eventWatcher.get();
+        emittedEvents = await acceptanceEventWatcher.get();
         assert.isOk(emittedEvents, "Events should be an array");
         assert.equal(emittedEvents.length, 1, "There should be one accepted game event");
         assert.isOk(emittedEvents[0], "There should be one accepted game event");
@@ -276,8 +296,31 @@ contract('DipDappDoe', function (accounts) {
         }
     });
 
-    it("should remove the game from the list of available games", async function(){
-        assert.fail("Untested");
+    it("should reject accepting an already started or ended game");
+
+    it("should remove the game from the list of available games when accepted", async function(){
+        let eventWatcher = gamesInstance.GameCreated();
+
+        let gamesIdx1 = await gamesInstance.getOpenGames.call();
+        gamesIdx1 = gamesIdx1.map(n => n.toNumber());
+
+        let hash = await libStringInstance.saltedHash.call(123, "my salt 1");
+        await gamesInstance.createGame(hash, "Jim");
+
+        let emittedEvents = await eventWatcher.get();
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+
+        let gamesIdx2 = await gamesInstance.getOpenGames.call();
+        gamesIdx2 = gamesIdx2.map(n => n.toNumber());
+        
+        await gamesInstance.acceptGame(gameIdx, 0, "Dana", { from: accounts[1] });
+        
+        let gamesIdx3 = await gamesInstance.getOpenGames.call();
+        gamesIdx3 = gamesIdx3.map(n => n.toNumber());
+        
+        assert.notInclude(gamesIdx1, gameIdx, "Should not include the new game yet");
+        assert.include(gamesIdx2, gameIdx, "Should include the new game");
+        assert.notInclude(gamesIdx3, gameIdx, "Should not include the new game anymore");
     });
 
     // DipDappDoe.confirmGame
@@ -301,7 +344,7 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should reject confirming a game that has not been accepted yet", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        let eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
@@ -327,7 +370,7 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should give the game for the second user if the hash does not match with the revealed values", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        let eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
@@ -347,8 +390,8 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should confirm a valid game for player 1", async function () {
-        var creationWatcher = gamesInstance.GameCreated();
-        var startingWatcher = gamesInstance.GameStarted();
+        let creationWatcher = gamesInstance.GameCreated();
+        let startingWatcher = gamesInstance.GameStarted();
 
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
@@ -398,8 +441,8 @@ contract('DipDappDoe', function (accounts) {
     });
     
     it("should confirm a valid game for player 2", async function () {
-        var creationWatcher = gamesInstance.GameCreated();
-        var startingWatcher = gamesInstance.GameStarted();
+        let creationWatcher = gamesInstance.GameCreated();
+        let startingWatcher = gamesInstance.GameStarted();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
@@ -449,7 +492,7 @@ contract('DipDappDoe', function (accounts) {
     });
     
     it("should reject confirming a game if it is already started", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        let eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
@@ -470,7 +513,7 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should reject game confirmations from users other than the creator", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        let eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
@@ -490,7 +533,7 @@ contract('DipDappDoe', function (accounts) {
     });
 
     it("should reject confirming a game if it has already ended", async function () {
-        var eventWatcher = gamesInstance.GameCreated();
+        let eventWatcher = gamesInstance.GameCreated();
         
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
@@ -769,7 +812,7 @@ contract('DipDappDoe', function (accounts) {
     });
     
     it("should reject marks beyond the board's range", async function(){
-        var eventWatcher = gamesInstance.GameCreated();
+        let eventWatcher = gamesInstance.GameCreated();
         const player1 = accounts[0];
         const player2 = accounts[1];
         

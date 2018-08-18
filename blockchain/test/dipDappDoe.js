@@ -301,7 +301,49 @@ contract('DipDappDoe', function (accounts) {
         }
     });
 
-    it("should reject accepting an already started or ended game");
+    it("should reject accepting a game if it is already started", async function () {
+        let eventWatcher = gamesInstance.GameCreated();
+
+        let hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
+
+        const emittedEvents = await eventWatcher.get();
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+
+        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
+        
+        try {
+            await gamesInstance.acceptGame(gameIdx, 150, "Jack", {from: randomUser});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should have been reverted. Instead, the error was: " + err.message);
+        }
+    });
+
+    it("should reject accepting a game if it has already ended", async function () {
+        let eventWatcher = gamesInstance.GameCreated();
+        
+        let hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
+        
+        const emittedEvents = await eventWatcher.get();
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: player2});
+        
+        // now the player 2 will win, and the game will end
+        await gamesInstance.confirmGame(gameIdx, 124, "initial salt", {from: player1});
+        
+        try {
+            await gamesInstance.acceptGame(gameIdx, 150, "Jack", {from: randomUser});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+    });
 
     it("should remove the game from the list of available games when accepted", async function(){
         let eventWatcher = gamesInstance.GameCreated();
@@ -517,26 +559,6 @@ contract('DipDappDoe', function (accounts) {
         }
     });
 
-    it("should reject game confirmations from users other than the creator", async function () {
-        let eventWatcher = gamesInstance.GameCreated();
-
-        let hash = await libStringInstance.saltedHash.call(123, "initial salt");
-        await gamesInstance.createGame(hash, "Jim", {from: player1});
-
-        const emittedEvents = await eventWatcher.get();
-        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
-
-        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
-        
-        try {
-            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: randomUser});
-            assert.fail("The transaction should have thrown an error");
-        }
-        catch (err) {
-            assert.include(err.message, "revert", "The transaction should be reverted");
-        }
-    });
-
     it("should reject confirming a game if it has already ended", async function () {
         let eventWatcher = gamesInstance.GameCreated();
         
@@ -553,6 +575,26 @@ contract('DipDappDoe', function (accounts) {
         
         try {
             await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+    });
+
+    it("should reject game confirmations from users other than the creator", async function () {
+        let eventWatcher = gamesInstance.GameCreated();
+
+        let hash = await libStringInstance.saltedHash.call(123, "initial salt");
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
+
+        const emittedEvents = await eventWatcher.get();
+        const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+
+        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
+        
+        try {
+            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: randomUser});
             assert.fail("The transaction should have thrown an error");
         }
         catch (err) {

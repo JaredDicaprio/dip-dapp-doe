@@ -4,6 +4,11 @@ const LibString = artifacts.require("./LibString.sol");
 let gamesInstance, libStringInstance;
 
 contract('DipDappDoe', function (accounts) {
+    const player1 = accounts[0];
+    const player2 = accounts[1];
+    const randomUser = accounts[5];
+    const testingGasPrice = 100000000000;
+
     it("should be deployed", async function () {
         gamesInstance = await DipDappDoe.deployed();
         assert.isOk(gamesInstance, "instance should not be null");
@@ -77,9 +82,9 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be empty");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
-        let [player1, player2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
-        assert.equal(player1, accounts[0], "The address of player 1 should be set");
-        assert.equal(player2, "0x0000000000000000000000000000000000000000", "The address of player 2 should be empty");
+        let [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
+        assert.equal(p1, player1, "The address of player 1 should be set");
+        assert.equal(p2, "0x0000000000000000000000000000000000000000", "The address of player 2 should be empty");
         assert.deepEqual(rest3, [], "The response should have 2 elements");
     });
 
@@ -119,9 +124,9 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be empty");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
-        let [player1, player2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
-        assert.equal(player1, accounts[0], "The address of player 1 should be set");
-        assert.equal(player2, "0x0000000000000000000000000000000000000000", "The address of player 2 should be empty");
+        let [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
+        assert.equal(p1, player1, "The address of player 1 should be set");
+        assert.equal(p2, "0x0000000000000000000000000000000000000000", "The address of player 2 should be empty");
         assert.deepEqual(rest3, [], "The response should have 2 elements");
     });
 
@@ -212,7 +217,7 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
         // accept game
-        await gamesInstance.acceptGame(gameIdx, 0, "Kathy", { value: web3.toWei(0.005, 'ether'), from: accounts[1] });
+        await gamesInstance.acceptGame(gameIdx, 0, "Kathy", { value: web3.toWei(0.005, 'ether'), from: player2 });
 
         balance = await web3.eth.getBalance(gamesInstance.address);
         assert.equal(balance.comparedTo(web3.toWei(0.04, 'ether')), 0, "The contract should have registered 0.005 more ether owed to the players");
@@ -238,9 +243,9 @@ contract('DipDappDoe', function (accounts) {
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
-        [player1, player2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
-        assert.equal(player1, accounts[0], "The address of player 1 should be set");
-        assert.equal(player2, accounts[1], "The address of player 2 should be set");
+        [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
+        assert.equal(p1, player1, "The address of player 1 should be set");
+        assert.equal(p2, player2, "The address of player 2 should be set");
         assert.deepEqual(rest3, [], "The response should have 2 elements");
     });
 
@@ -263,7 +268,7 @@ contract('DipDappDoe', function (accounts) {
         gamesIdx = gamesIdx.map(n => n.toNumber());
         assert.include(gamesIdx, gameIdx, "Should include the new game");
 
-        await gamesInstance.acceptGame(gameIdx, 0, "Dana", { from: accounts[1] });
+        await gamesInstance.acceptGame(gameIdx, 0, "Dana", { from: player2 });
 
         emittedEvents = await acceptanceEventWatcher.get();
         assert.isOk(emittedEvents, "Events should be an array");
@@ -272,7 +277,7 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The game should have the last gameIdx");
 
         try {
-            await gamesInstance.acceptGame(gameIdx, 0, "Dana", { from: accounts[2] });
+            await gamesInstance.acceptGame(gameIdx, 0, "Dana", { from: randomUser });
             assert.fail("The transaction should have thrown an error");
         }
         catch (err) {
@@ -280,7 +285,7 @@ contract('DipDappDoe', function (accounts) {
         }
 
         try {
-            await gamesInstance.acceptGame(gameIdx, 1, "Donna", { from: accounts[1] });
+            await gamesInstance.acceptGame(gameIdx, 1, "Donna", { from: player2 });
             assert.fail("The transaction should have thrown an error");
         }
         catch (err) {
@@ -313,7 +318,7 @@ contract('DipDappDoe', function (accounts) {
         let gamesIdx2 = await gamesInstance.getOpenGames.call();
         gamesIdx2 = gamesIdx2.map(n => n.toNumber());
         
-        await gamesInstance.acceptGame(gameIdx, 0, "Dana", { from: accounts[1] });
+        await gamesInstance.acceptGame(gameIdx, 0, "Dana", { from: player2 });
         
         let gamesIdx3 = await gamesInstance.getOpenGames.call();
         gamesIdx3 = gamesIdx3.map(n => n.toNumber());
@@ -347,7 +352,7 @@ contract('DipDappDoe', function (accounts) {
         let eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
-        await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
 
         const emittedEvents = await eventWatcher.get();
         const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
@@ -373,14 +378,14 @@ contract('DipDappDoe', function (accounts) {
         let eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
-        await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
 
         const emittedEvents = await eventWatcher.get();
         const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
 
-        await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: accounts[1]});
+        await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: player2});
         
-        await gamesInstance.confirmGame(gameIdx, 124, "initial salt", {from: accounts[0]});
+        await gamesInstance.confirmGame(gameIdx, 124, "initial salt", {from: player1});
         
         // 123 != 124 => player 2 should be the winner
         let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
@@ -394,12 +399,12 @@ contract('DipDappDoe', function (accounts) {
         let startingWatcher = gamesInstance.GameStarted();
 
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
-        await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
 
         const creationEvents = await creationWatcher.get();
         let gameIdx = creationEvents[0].args.gameIdx.toNumber();
 
-        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
+        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
 
         let [lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1pre.toNumber(), 0, "The last timestamp of player 1 should be set");
@@ -407,7 +412,7 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
         await new Promise(resolve => setTimeout(resolve, 1000));
-        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: accounts[0]});
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
         
         const startingEvents = await startingWatcher.get();
         gameIdx = startingEvents[0].args.gameIdx.toNumber();
@@ -434,9 +439,9 @@ contract('DipDappDoe', function (accounts) {
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
-        const [player1, player2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
-        assert.equal(player1, accounts[0], "The address of player 1 should still be set");
-        assert.equal(player2, accounts[1], "The address of player 2 should still be set");
+        const [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
+        assert.equal(p1, player1, "The address of player 1 should still be set");
+        assert.equal(p2, player2, "The address of player 2 should still be set");
         assert.deepEqual(rest3, [], "The response should have 2 elements");
     });
     
@@ -445,12 +450,12 @@ contract('DipDappDoe', function (accounts) {
         let startingWatcher = gamesInstance.GameStarted();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
-        await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
 
         const creationEvents = await creationWatcher.get();
         let gameIdx = creationEvents[0].args.gameIdx.toNumber();
 
-        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
+        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
 
         let [lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
         assert.isAbove(lastTransaction1pre.toNumber(), 0, "The last timestamp of player 1 should be set");
@@ -458,7 +463,7 @@ contract('DipDappDoe', function (accounts) {
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
         await new Promise(resolve => setTimeout(resolve, 1000));
-        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: accounts[0]});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
         
         const startingEvents = await startingWatcher.get();
         gameIdx = startingEvents[0].args.gameIdx.toNumber();
@@ -485,9 +490,9 @@ contract('DipDappDoe', function (accounts) {
         assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
         assert.deepEqual(rest2, [], "The response should have 3 elements");
 
-        const [player1, player2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
-        assert.equal(player1, accounts[0], "The address of player 1 should still be set");
-        assert.equal(player2, accounts[1], "The address of player 2 should still be set");
+        const [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
+        assert.equal(p1, player1, "The address of player 1 should still be set");
+        assert.equal(p2, player2, "The address of player 2 should still be set");
         assert.deepEqual(rest3, [], "The response should have 2 elements");
     });
     
@@ -495,16 +500,16 @@ contract('DipDappDoe', function (accounts) {
         let eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
-        await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
 
         const emittedEvents = await eventWatcher.get();
         const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
 
-        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
-        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: accounts[0]});
+        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
+        await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
         
         try {
-            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: accounts[0]});
+            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
             assert.fail("The transaction should have thrown an error");
         }
         catch (err) {
@@ -516,15 +521,15 @@ contract('DipDappDoe', function (accounts) {
         let eventWatcher = gamesInstance.GameCreated();
 
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
-        await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
 
         const emittedEvents = await eventWatcher.get();
         const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
 
-        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: accounts[1]});
+        await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
         
         try {
-            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: accounts[2]});
+            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: randomUser});
             assert.fail("The transaction should have thrown an error");
         }
         catch (err) {
@@ -536,18 +541,18 @@ contract('DipDappDoe', function (accounts) {
         let eventWatcher = gamesInstance.GameCreated();
         
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
-        await gamesInstance.createGame(hash, "Jim", {from: accounts[0]});
+        await gamesInstance.createGame(hash, "Jim", {from: player1});
         
         const emittedEvents = await eventWatcher.get();
         const gameIdx = emittedEvents[0].args.gameIdx.toNumber();
         
-        await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: accounts[1]});
+        await gamesInstance.acceptGame(gameIdx, 234, "Dana", {from: player2});
         
         // now the player 2 will win, and the game will end
-        await gamesInstance.confirmGame(gameIdx, 124, "initial salt", {from: accounts[0]});
+        await gamesInstance.confirmGame(gameIdx, 124, "initial salt", {from: player1});
         
         try {
-            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: accounts[0]});
+            await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
             assert.fail("The transaction should have thrown an error");
         }
         catch (err) {
@@ -560,8 +565,6 @@ contract('DipDappDoe', function (accounts) {
     it("should register a user's valid move, emit an event and change the turn", async function(){
         const createEventWatcher = gamesInstance.GameCreated();
         const markEventWatcher = gamesInstance.PositionMarked();
-        const player1 = accounts[0];
-        const player2 = accounts[1];
         
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
@@ -813,8 +816,6 @@ contract('DipDappDoe', function (accounts) {
     
     it("should reject marks beyond the board's range", async function(){
         let eventWatcher = gamesInstance.GameCreated();
-        const player1 = accounts[0];
-        const player2 = accounts[1];
         
         let hash = await libStringInstance.saltedHash.call(123, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
@@ -874,19 +875,17 @@ contract('DipDappDoe', function (accounts) {
     
     it("should reject marks on non existing, not started or already ended games", async function(){
         const eventWatcher = gamesInstance.GameCreated();
-        const player1 = accounts[0];
-        const player2 = accounts[1];
         
         // Non existing
         try {
-            await gamesInstance.markPosition(12345678, 9, {from: player1}); // invalid move
+            await gamesInstance.markPosition(55555, 9, {from: player1}); // invalid move
             assert.fail("The transaction should have thrown an error");
         }
         catch (err) {
             assert.include(err.message, "revert", "The transaction should be reverted");
         }
 
-        let [cells, status] = await gamesInstance.getGameInfo(12345678);
+        let [cells, status] = await gamesInstance.getGameInfo(55555);
         cells = cells.map(n => n.toNumber());
         assert.deepEqual(cells, [0, 0, 0, 0, 0, 0, 0, 0, 0], "The board does not match");
         assert.equal(status.toNumber(), 0, "The game should not be started");
@@ -974,9 +973,6 @@ contract('DipDappDoe', function (accounts) {
     
     it("should reject marks from someone other than the expected player", async function(){
         const eventWatcher = gamesInstance.GameCreated();
-        const player1 = accounts[0];
-        const player2 = accounts[1];
-        const randomUser = accounts[5];
         
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
@@ -1141,8 +1137,6 @@ contract('DipDappDoe', function (accounts) {
     
     it("should reject marking already marked positions", async function(){
         const eventWatcher = gamesInstance.GameCreated();
-        const player1 = accounts[0];
-        const player2 = accounts[1];
         
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
@@ -1288,8 +1282,6 @@ contract('DipDappDoe', function (accounts) {
 
     it("should detect that the game ends in draw", async function (){
         const eventWatcher = gamesInstance.GameCreated();
-        const player1 = accounts[0];
-        const player2 = accounts[1];
         
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
@@ -1363,8 +1355,6 @@ contract('DipDappDoe', function (accounts) {
     
     it("should detect that a user wins the game", async function (){
         const eventWatcher = gamesInstance.GameCreated();
-        const player1 = accounts[0];
-        const player2 = accounts[1];
         
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
         await gamesInstance.createGame(hash, "James", {from: player1});
@@ -1576,17 +1566,800 @@ contract('DipDappDoe', function (accounts) {
 
     // DipDappDoe.withdraw
 
-    it("should reject withdrawals from a non existing game");
-    it("should reject withdrawals from an unstarted game");
-    it("should reject withdrawals from an extraneous user");
-    it("should reject withdrawals from an active game and recent transactions");
-    it("should reject withdrawals from a game with no money");
-    it("should reject withdrawals from the game loser");
+    it("should reject withdrawals from a non existing game", async function () {
+
+        try {
+            await gamesInstance.withdraw(55555, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(55555, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+    });
+
+    it("should reject withdrawals from an unstarted game", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+    });
     
-    it("should accept the withdrawal from both users in case of draw");
-    it("should accept the withdrawal from the game winner");
+    it("should reject withdrawals from an active game and recent transactions", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        // Play
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 8, {from: player2});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 3, {from: player2});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 1, {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 7, {from: player2});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+    });
     
-    it("should accept only one legitimate withdrawal and reject the rest");
-    it("should allow to withdraw and end the game if the opponent didn't play after a while");
+    it("should accept the withdrawal from both users in case of draw", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        // Simulate a draw
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 8, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 5, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 1, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 7, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        const balance1pre = await web3.eth.getBalance(player1);
+        const balance2pre = await web3.eth.getBalance(player2);
+
+        const tx1 = await gamesInstance.withdraw(gameIdx, { from: player1 });
+        const tx2 = await gamesInstance.withdraw(gameIdx, { from: player2 });
+
+        const balance1post = await web3.eth.getBalance(player1);
+        const balance2post = await web3.eth.getBalance(player2);
+
+        // player 1 balance
+        let expected = balance1pre.plus(web3.toWei(0.01, "ether"));
+        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance1post.isEqualTo(expected), "Player 1's balance should have increased by 0.01 ether minus gas");
+        
+        // player 2 balance
+        expected = balance2pre.plus(web3.toWei(0.01, "ether"));
+        expected = expected.minus(web3.utils.toBN(tx2.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance2post.isEqualTo(expected), "Player 2's balance should have increased by 0.01 ether minus gas");
+    });
+    
+    it("should accept the withdrawal from the game winner", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        // Player 1 wins
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        const balance1pre = await web3.eth.getBalance(player1);
+
+        const tx1 = await gamesInstance.withdraw(gameIdx, { from: player1 });
+
+        const balance1post = await web3.eth.getBalance(player1);
+
+        // player 1 balance
+        let expected = balance1pre.plus(web3.toWei(0.02, "ether"));
+        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance1post.isEqualTo(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
+    });
+    
+    it("should reject withdrawals from the game loser", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        // Player 1 wins
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        const balance2pre = await web3.eth.getBalance(player2);
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        const balance2post = await web3.eth.getBalance(player2);
+
+        // player 2 balance
+        assert(balance2post.lt(balance2pre), "Player 2's balance should have decreased (gas)");
+    });
+    
+    it("should reject withdrawals from a game with no money", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1 });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2 });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        // Player 1 wins
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        const balance1pre = await web3.eth.getBalance(player1);
+        const balance2pre = await web3.eth.getBalance(player2);
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        const balance1post = await web3.eth.getBalance(player1);
+        const balance2post = await web3.eth.getBalance(player2);
+
+        // players balance
+        assert(balance1post.lt(balance1pre), "Player 1's balance should have decreased (gas)");
+        assert(balance2post.lt(balance2pre), "Player 2's balance should have decreased (gas)");
+    });
+    
+    it("should reject withdrawals from an extraneous user", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: randomUser });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        // Player 1 wins the following game
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: randomUser });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: randomUser });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: randomUser });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: randomUser });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        // Game won
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: randomUser });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+    });
+    
+    it("should accept only one legitimate withdrawal and reject the rest", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        // Player 1 wins
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        const balance1pre = await web3.eth.getBalance(player1);
+
+        const tx1 = await gamesInstance.withdraw(gameIdx, { from: player1 });
+
+        const balance1post = await web3.eth.getBalance(player1);
+
+        // player 1 balance
+        let expected = balance1pre.plus(web3.toWei(0.02, "ether"));
+        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance1post.isEqualTo(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
+
+        // retry many times
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+        
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+    });
+    
+    it("should allow to withdraw and end the game if the opponent didn't play after a while", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        // Player 1 quits the game
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 1, "The game should still be for player 1");
+
+        // player 2 claims
+
+        const balance2pre = await web3.eth.getBalance(player2);
+        const tx2 = await gamesInstance.withdraw(gameIdx, { from: player2 });
+        const balance2post = await web3.eth.getBalance(player2);
+
+        let expected = balance2pre.plus(web3.toWei(0.02, "ether"));
+        expected = expected.minus(web3.utils.toBN(tx2.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance2post.isEqualTo(expected), "Player 2's balance should have increased by 0.02 ether minus gas");
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 12, "The game should be won by player 2");
+    });
+    
+    it("should allow to continue if a user takes longer than the timeout but the opponent does not claim", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        // Player 1 quits temporarily the game
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        await gamesInstance.markPosition(gameIdx, 3, {from: player1});
+
+        // try to claim when player 1 is back
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        await gamesInstance.markPosition(gameIdx, 4, {from: player2});
+        await gamesInstance.markPosition(gameIdx, 6, {from: player1});
+
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 11, "The game should be won by player 1");
+
+        const balance1pre = await web3.eth.getBalance(player1);
+
+        const tx1 = await gamesInstance.withdraw(gameIdx, { from: player1 });
+
+        const balance1post = await web3.eth.getBalance(player1);
+
+        // player 1 balance
+        let expected = balance1pre.plus(web3.toWei(0.02, "ether"));
+        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance1post.isEqualTo(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
+
+        // try to claim anyway
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+    });
+
+    it("should allow to withdraw and end a game if the creator didn't confirm after a while", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        let tx = await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        assert.equal(gameIdx, tx.logs[0].args.gameIdx.toNumber(), "The game index should match");
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
+
+        // Player 1 quits the game
+
+        await gamesInstance.markPosition(gameIdx, 0, {from: player1});
+        await gamesInstance.markPosition(gameIdx, 2, {from: player2});
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 1, "The game should still be for player 1");
+
+        // player 2 claims
+
+        const balance2pre = await web3.eth.getBalance(player2);
+        const tx2 = await gamesInstance.withdraw(gameIdx, { from: player2 });
+        const balance2post = await web3.eth.getBalance(player2);
+
+        let expected = balance2pre.plus(web3.toWei(0.02, "ether"));
+        expected = expected.minus(web3.utils.toBN(tx2.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance2post.isEqualTo(expected), "Player 2's balance should have increased by 0.02 ether minus gas");
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 12, "The game should be won by player 2");
+    });
+    
+    it("should allow the creator to withdraw and end if nobody accepts the game after a while", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        let gamesIdx = await gamesInstance.getOpenGames.call();
+        gamesIdx = gamesIdx.map(n => n.toNumber());
+        assert.include(gamesIdx, gameIdx, "Should include the new game");
+
+        // try to withdraw earlier than it should be
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player1 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        gamesIdx = await gamesInstance.getOpenGames.call();
+        gamesIdx = gamesIdx.map(n => n.toNumber());
+        assert.include(gamesIdx, gameIdx, "Should still include the game");
+
+        // nobody accepts
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 0, "The game should still be not started");
+
+        // cancel the game
+        const balance1pre = await web3.eth.getBalance(player1);
+        const tx1 = await gamesInstance.withdraw(gameIdx, { from: player1 });
+        const balance1post = await web3.eth.getBalance(player1);
+
+        // player 1 balance
+        let expected = balance1pre.plus(web3.toWei(0.01, "ether"));
+        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance1post.isEqualTo(expected), "The creator's balance should have increased by 0.01 ether minus gas");
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 10, "The game should be ended");
+
+        gamesIdx = await gamesInstance.getOpenGames.call();
+        gamesIdx = gamesIdx.map(n => n.toNumber());
+        assert.notInclude(gamesIdx, gameIdx, "Should not include the game anymore");
+    });
 
 });

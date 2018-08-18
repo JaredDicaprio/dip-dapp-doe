@@ -1626,7 +1626,7 @@ contract('DipDappDoe', function (accounts) {
         }
     });
 
-    it("should reject withdrawals from an unstarted game", async function () {
+    it("should reject withdrawals from an unstarted game within the timeout period", async function () {
         const eventWatcher = gamesInstance.GameCreated();
         
         let hash = await libStringInstance.saltedHash.call(100, "initial salt");
@@ -1652,6 +1652,8 @@ contract('DipDappDoe', function (accounts) {
 
         await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
         
+        // before the timeout
+
         try {
             await gamesInstance.withdraw(gameIdx, { from: player1 });
             assert.fail("The transaction should have thrown an error");
@@ -1889,15 +1891,15 @@ contract('DipDappDoe', function (accounts) {
 
         // player 1 balance
         let expected = balance1pre.plus(web3.toWei(0.01, "ether"));
-        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+        expected = expected.minus(web3.toBigNumber(tx1.receipt.gasUsed).times(testingGasPrice));
 
-        assert(balance1post.isEqualTo(expected), "Player 1's balance should have increased by 0.01 ether minus gas");
+        assert(balance1post.eq(expected), "Player 1's balance should have increased by 0.01 ether minus gas");
         
         // player 2 balance
         expected = balance2pre.plus(web3.toWei(0.01, "ether"));
-        expected = expected.minus(web3.utils.toBN(tx2.receipt.gasUsed).times(testingGasPrice));
+        expected = expected.minus(web3.toBigNumber(tx2.receipt.gasUsed).times(testingGasPrice));
 
-        assert(balance2post.isEqualTo(expected), "Player 2's balance should have increased by 0.01 ether minus gas");
+        assert(balance2post.eq(expected), "Player 2's balance should have increased by 0.01 ether minus gas");
     });
     
     it("should accept the withdrawal from the game winner", async function () {
@@ -1946,9 +1948,9 @@ contract('DipDappDoe', function (accounts) {
 
         // player 1 balance
         let expected = balance1pre.plus(web3.toWei(0.02, "ether"));
-        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+        expected = expected.minus(web3.toBigNumber(tx1.receipt.gasUsed).times(testingGasPrice));
 
-        assert(balance1post.isEqualTo(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
+        assert(balance1post.eq(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
     });
     
     it("should reject withdrawals from the game loser", async function () {
@@ -2179,9 +2181,9 @@ contract('DipDappDoe', function (accounts) {
 
         // player 1 balance
         let expected = balance1pre.plus(web3.toWei(0.02, "ether"));
-        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+        expected = expected.minus(web3.toBigNumber(tx1.receipt.gasUsed).times(testingGasPrice));
 
-        assert(balance1post.isEqualTo(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
+        assert(balance1post.eq(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
 
         // retry many times
         try {
@@ -2240,9 +2242,9 @@ contract('DipDappDoe', function (accounts) {
         const balance2post = await web3.eth.getBalance(player2);
 
         let expected = balance2pre.plus(web3.toWei(0.02, "ether"));
-        expected = expected.minus(web3.utils.toBN(tx2.receipt.gasUsed).times(testingGasPrice));
+        expected = expected.minus(web3.toBigNumber(tx2.receipt.gasUsed).times(testingGasPrice));
 
-        assert(balance2post.isEqualTo(expected), "Player 2's balance should have increased by 0.02 ether minus gas");
+        assert(balance2post.eq(expected), "Player 2's balance should have increased by 0.02 ether minus gas");
 
         [cells, status] = await gamesInstance.getGameInfo(gameIdx);
         assert.equal(status.toNumber(), 12, "The game should be won by player 2");
@@ -2295,9 +2297,9 @@ contract('DipDappDoe', function (accounts) {
 
         // player 1 balance
         let expected = balance1pre.plus(web3.toWei(0.02, "ether"));
-        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+        expected = expected.minus(web3.toBigNumber(tx1.receipt.gasUsed).times(testingGasPrice));
 
-        assert(balance1post.isEqualTo(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
+        assert(balance1post.eq(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
 
         // try to claim anyway
         try {
@@ -2341,9 +2343,9 @@ contract('DipDappDoe', function (accounts) {
         const balance2post = await web3.eth.getBalance(player2);
 
         let expected = balance2pre.plus(web3.toWei(0.02, "ether"));
-        expected = expected.minus(web3.utils.toBN(tx2.receipt.gasUsed).times(testingGasPrice));
+        expected = expected.minus(web3.toBigNumber(tx2.receipt.gasUsed).times(testingGasPrice));
 
-        assert(balance2post.isEqualTo(expected), "Player 2's balance should have increased by 0.02 ether minus gas");
+        assert(balance2post.eq(expected), "Player 2's balance should have increased by 0.02 ether minus gas");
 
         [cells, status] = await gamesInstance.getGameInfo(gameIdx);
         assert.equal(status.toNumber(), 12, "The game should be won by player 2");
@@ -2392,9 +2394,9 @@ contract('DipDappDoe', function (accounts) {
 
         // player 1 balance
         let expected = balance1pre.plus(web3.toWei(0.01, "ether"));
-        expected = expected.minus(web3.utils.toBN(tx1.receipt.gasUsed).times(testingGasPrice));
+        expected = expected.minus(web3.toBigNumber(tx1.receipt.gasUsed).times(testingGasPrice));
 
-        assert(balance1post.isEqualTo(expected), "The creator's balance should have increased by 0.01 ether minus gas");
+        assert(balance1post.eq(expected), "The creator's balance should have increased by 0.01 ether minus gas");
 
         [cells, status] = await gamesInstance.getGameInfo(gameIdx);
         assert.equal(status.toNumber(), 10, "The game should be ended");

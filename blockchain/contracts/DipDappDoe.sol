@@ -6,7 +6,7 @@ import "./LibString.sol";
 contract DipDappDoe {
     // DATA
     struct Game {
-        uint32 index;   // position in openGames[]
+        uint32 listIndex;   // position in openGames[]
         uint8[9] cells;  // [123 / 456 / 789] containing [0 => nobody, 1 => X, 2 => O]
         
         // 0 => not started, 1 => player 1, 2 => player 2
@@ -25,7 +25,7 @@ contract DipDappDoe {
     }
     uint32[] openGames; // list of active games' id's
     mapping(uint32 => Game) gamesData; // data containers
-    uint32 lastGameIdx;
+    uint32 nextGameIdx;
     uint16 public timeout;
 
     // EVENTS
@@ -81,24 +81,24 @@ contract DipDappDoe {
     // OPERATIONS
 
     function createGame(bytes32 randomNumberHash, string nick) public payable returns (uint32 gameIdx) {
-        require(lastGameIdx + 1 > lastGameIdx);
+        require(nextGameIdx + 1 > nextGameIdx);
 
-        gamesData[lastGameIdx].index = uint32(openGames.length);
-        gamesData[lastGameIdx].creatorHash = randomNumberHash;
-        gamesData[lastGameIdx].amount = msg.value;
-        gamesData[lastGameIdx].nicks[0] = nick;
-        gamesData[lastGameIdx].players[0] = msg.sender;
-        gamesData[lastGameIdx].lastTransactions[0] = now;
-        openGames.push(lastGameIdx);
+        gamesData[nextGameIdx].listIndex = uint32(openGames.length);
+        gamesData[nextGameIdx].creatorHash = randomNumberHash;
+        gamesData[nextGameIdx].amount = msg.value;
+        gamesData[nextGameIdx].nicks[0] = nick;
+        gamesData[nextGameIdx].players[0] = msg.sender;
+        gamesData[nextGameIdx].lastTransactions[0] = now;
+        openGames.push(nextGameIdx);
 
-        gameIdx = lastGameIdx;
-        emit GameCreated(lastGameIdx);
+        gameIdx = nextGameIdx;
+        emit GameCreated(nextGameIdx);
         
-        lastGameIdx++;
+        nextGameIdx++;
     }
 
     function acceptGame(uint32 gameIdx, uint8 randomNumber, string nick) public payable {
-        require(gameIdx < lastGameIdx);
+        require(gameIdx < nextGameIdx);
         require(gamesData[gameIdx].players[0] != 0x0);
         require(msg.value == gamesData[gameIdx].amount);
         require(gamesData[gameIdx].players[1] == 0x0);
@@ -112,14 +112,14 @@ contract DipDappDoe {
         emit GameAccepted(gameIdx);
 
         // Remove from the available list (unordered)
-        uint32 idxToDelete = gamesData[gameIdx].index;
+        uint32 idxToDelete = gamesData[gameIdx].listIndex;
         openGames[idxToDelete] = openGames[openGames.length - 1];
-        gamesData[gameIdx].index = idxToDelete;
+        gamesData[gameIdx].listIndex = idxToDelete;
         openGames.length--;
     }
 
     function confirmGame(uint32 gameIdx, uint8 revealedRandomNumber, string revealedSalt) public {
-        require(gameIdx < lastGameIdx);
+        require(gameIdx < nextGameIdx);
         require(gamesData[gameIdx].players[0] == msg.sender);
         require(gamesData[gameIdx].players[1] != 0x0);
         require(gamesData[gameIdx].status == 0);
@@ -145,7 +145,7 @@ contract DipDappDoe {
     }
 
     function markPosition(uint32 gameIdx, uint8 cell) public {
-        require(gameIdx < lastGameIdx);
+        require(gameIdx < nextGameIdx);
         require(cell <= 8);
 
         uint8[9] storage cells = gamesData[gameIdx].cells;
@@ -209,7 +209,78 @@ contract DipDappDoe {
     }
 
     function withdraw(uint32 gameIdx) public {
-        revert();
+        require(gameIdx < nextGameIdx);
+        require(gamesData[gameIdx].amount > 0);
+
+        uint8 status = gamesData[gameIdx].status;
+
+        if(status == 0) {
+            require(gamesData[gameIdx].players[0] == msg.sender);
+            require(gamesData[gameIdx].players[1] == 0x0);
+            require(now - gamesData[gameIdx].lastTransactions[0] > timeout);
+
+            gamesData[gameIdx].withdrawn[0] = true;
+            gamesData[gameIdx].status = 10; // consider it ended in draw
+            msg.sender.transfer(gamesData[gameIdx].amount);
+
+            // Remove from the available list (unordered)
+            uint32 idxToDelete = gamesData[gameIdx].listIndex;
+            openGames[idxToDelete] = openGames[openGames.length - 1];
+            gamesData[gameIdx].listIndex = idxToDelete;
+            openGames.length--;
+        }
+        else if(status == 1) {
+            // player 2 claims
+            require(gamesData[gameIdx].players[1] == msg.sender);
+            require(now - gamesData[gameIdx].lastTransactions[0] > timeout);
+
+            gamesData[gameIdx].withdrawn[1] = true;
+            gamesData[gameIdx].status = 12;
+            msg.sender.transfer(gamesData[gameIdx].amount * 2);
+        }
+        else if(status == 2){
+            // player 1 claims
+            require(gamesData[gameIdx].players[0] == msg.sender);
+            require(now - gamesData[gameIdx].lastTransactions[1] > timeout);
+
+            gamesData[gameIdx].withdrawn[0] = true;
+            gamesData[gameIdx].status = 11;
+            msg.sender.transfer(gamesData[gameIdx].amount * 2);
+        }
+        else if(status == 10){
+            if(gamesData[gameIdx].players[0] == msg.sender){
+                require(!gamesData[gameIdx].withdrawn[0]);
+
+                gamesData[gameIdx].withdrawn[0] = true;
+                msg.sender.transfer(gamesData[gameIdx].amount);
+            }
+            else if(gamesData[gameIdx].players[1] == msg.sender){
+                require(!gamesData[gameIdx].withdrawn[1]);
+
+                gamesData[gameIdx].withdrawn[1] = true;
+                msg.sender.transfer(gamesData[gameIdx].amount);
+            }
+            else {
+                revert();
+            }
+        }
+        else if(status == 11){
+            require(gamesData[gameIdx].players[0] == msg.sender);
+            require(!gamesData[gameIdx].withdrawn[0]);
+
+            gamesData[gameIdx].withdrawn[0] = true;
+            msg.sender.transfer(gamesData[gameIdx].amount * 2);
+        }
+        else if(status == 12){
+            require(gamesData[gameIdx].players[1] == msg.sender);
+            require(!gamesData[gameIdx].withdrawn[1]);
+
+            gamesData[gameIdx].withdrawn[1] = true;
+            msg.sender.transfer(gamesData[gameIdx].amount * 2);
+        }
+        else {
+            revert();
+        }
     }
 
     // PUBLIC HELPER FUNCTIONS
@@ -222,40 +293,4 @@ contract DipDappDoe {
     function () public payable {
         revert();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // mapping (address => uint) balances;
-
-    // event Transfer(address indexed _from, address indexed _to, uint256 _value);
-
-    // constructor() public {
-    //     balances[msg.sender] = 10000;
-    // }
-
-    // function sendCoin(address receiver, uint amount) public returns(bool sufficient) {
-    //     if (balances[msg.sender] < amount) return false;
-    //     balances[msg.sender] -= amount;
-    //     balances[receiver] += amount;
-    //     emit Transfer(msg.sender, receiver, amount);
-    //     return true;
-    // }
-
-    // function getBalanceInEth(address addr) public view returns(uint){
-    //     return ConvertLib.convert(getBalance(addr),2);
-    // }
-
-    // function getBalance(address addr) public view returns(uint) {
-    //     return balances[addr];
-    // }
 }

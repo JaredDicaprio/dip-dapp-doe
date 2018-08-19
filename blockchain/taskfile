@@ -4,16 +4,26 @@ PATH=./node_modules/.bin:$PATH
 ###############################################################################
 # ACTIONS
 
-function build {
-  echo "This is the build action"
+function init {
+  sudo npm install -g truffle solc
+  cd deploy
+  npm install
 }
 
 function test {
   truffle test
 }
 
+function build {
+  solcjs --bin --abi --optimize -o ./build ./contracts/*.sol
+}
+
+function deploy {
+  node deploy $@ # keep the rest of parameters (mnemonic)
+}
+
 ###############################################################################
-# DEFAULT => INFO
+# DEFAULT => HELP
 
 function default {
   echo "$0 <task> <args>"

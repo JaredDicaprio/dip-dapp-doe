@@ -1,0 +1,17 @@
+{
+  "name": "dip-dapp-doe",
+  "version": "1.0.0",
+  "description": "Example of an Ethereum distributed app",
+  "main": "index.js",
+  "author": "Jordi Moraleda",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^16.4.2",
+    "react-dom": "^16.4.2",
+    "react-redux": "^5.0.7",
+    "react-router-dom": "^4.3.1",
+    "redux": "^4.0.0",
+    "redux-thunk": "^2.3.0",
+    "web3": "^1.0.0-beta.35"
+  }
+}

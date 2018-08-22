@@ -1,10 +1,10 @@
 import React, { Component } from "react"
-import { Route, Switch, Redirect } from 'react-router-dom'
+import { Route, Switch, Redirect, withRouter } from 'react-router-dom'
 import { connect } from "react-redux"
-import Web3 from "web3"
+import { isWeb3Injected, getInjectedWeb3 } from "./contracts/web3"
 
 import getDipDappDoeInstance from "./contracts/dip-dapp-doe"
-import { init as actionsInit, fetchOpenGames } from "./store/actions"
+import { fetchOpenGames } from "./store/actions"
 
 import MainView from "./views/main"
 import Container from "./widgets/container"
@@ -16,29 +16,41 @@ const MessageView = props => <div>{props.message || ""}</div>
 
 class App extends Component {
     componentDidMount() {
-        if (window.web3 && window.web3.currentProvider) {
-            window.web3 = new Web3(window.web3.currentProvider)
+        if (isWeb3Injected()) {
+            let web3 = getInjectedWeb3()
+            this.DipDappDoe = getDipDappDoeInstance()
 
-            this.DipDappDoe = getDipDappDoeInstance(window.web3)
+            web3.eth.getBlockNumber().then(blockNumber => {
+                this.props.dispatch({ type: "SET_STARTING_BLOCK", blockNumber })
 
-            actionsInit(this.DipDappDoe)
-            this.checkWeb3Status()
-            this.checkInterval = setInterval(() => this.checkWeb3Status(), 1500)
+                return this.checkWeb3Status()
+            }).then(() => {
+                this.addListeners()
 
-            this.props.dispatch(fetchOpenGames(this.DipDappDoe))
+                this.checkInterval = setInterval(() => this.checkWeb3Status(), 1500)
+
+                this.props.dispatch(fetchOpenGames(this.DipDappDoe))
+            })
         }
         else {
             this.props.dispatch({ type: "SET_UNSUPPORTED" })
         }
     }
 
+    componentWillUnmount() {
+        if (this.checkInterval) clearInterval(this.checkInterval)
+        if (this.creationEvent) this.creationEvent.unsubscribe()
+        if (this.acceptedEvent) this.acceptedEvent.unsubscribe()
+    }
+
     checkWeb3Status() {
-        web3.eth.net.isListening().then(listening => {
+        let web3 = getInjectedWeb3()
+        return web3.eth.net.isListening().then(listening => {
             if (!listening) {
                 return this.props.dispatch({ type: "SET_DISCONNECTED" })
             }
 
-            web3.eth.net.getNetworkType().then(id => {
+            return web3.eth.net.getNetworkType().then(id => {
                 if (this.props.status.networkId == id) {
                     return
                 }
@@ -56,28 +68,36 @@ class App extends Component {
     }
 
     addListeners() {
-        this.DipDappDoe.events.GameCreated().subscribe(this.onGameCreated)
-        this.DipDappDoe.events.GameAccepted().subscribe(this.onGameAccepted)
-        this.DipDappDoe.events.GameStarted().subscribe(this.onGameStarted)
-        this.DipDappDoe.events.PositionMarked().subscribe(this.onPositionMarked)
-        this.DipDappDoe.events.GameEnded().subscribe(this.onGameEnded)
+        // Work in progress
+
+        this.creationEvent = this.DipDappDoe.events.GameCreated({
+            // filter: {myIndexedParam: [20,23], myOtherIndexedParam: '0x123456789...'}, // Using an array means OR: e.g. 20 or 23
+            fromBlock: this.props.status.startingBlock || 0
+        })
+            .on('data', event => this.onGameCreated(event))
+            .on('changed', function (event) {
+                console.log('changed', event)
+            })
+            .on('error', error => message.error(error && error.message || error))
+
+        this.acceptedEvent = this.DipDappDoe.events.GameAccepted({
+            // filter: {myIndexedParam: [20,23], myOtherIndexedParam: '0x123456789...'}, // Using an array means OR: e.g. 20 or 23
+            fromBlock: this.props.status.startingBlock || 0
+        })
+            .on('data', event => this.onGameAccepted(event))
+            .on('changed', function (event) {
+                console.log('changed', event)
+            })
+            .on('error', error => message.error(error && error.message || error))
     }
 
-    onGameCreated(error, result) {
-console.log(error, result)
-debugger;
+    onGameCreated(event) {
+        // console.log(event.returnValues.gameIdx)
+        this.props.dispatch(fetchOpenGames(this.DipDappDoe))
     }
-    onGameAccepted(error, result) {
-
-    }
-    onGameStarted(error, result) {
-
-    }
-    onPositionMarked(error, result) {
-
-    }
-    onGameEnded(error, result) {
-
+    onGameAccepted(event) {
+        // console.log(event.returnValues.gameIdx)
+        this.props.dispatch(fetchOpenGames(this.DipDappDoe))
     }
 
     render() {
@@ -99,4 +119,4 @@ debugger;
     }
 }
 
-export default connect(({ accounts, status, openGames }) => ({ accounts, status, openGames }))(App)
+export default withRouter(connect(({ accounts, status, openGames }) => ({ accounts, status, openGames }))(App))

@@ -1,5 +1,5 @@
-import React from "react";
-import PropTypes from "prop-types";
+import React from "react"
+import PropTypes from "prop-types"
 
 const Container = ({ children, xs, sm, md, lg, xl, className }) => (
     <div className={className ? className + " container" : "container"}>
@@ -44,7 +44,7 @@ const Container = ({ children, xs, sm, md, lg, xl, className }) => (
         </style>
         {children}
     </div>
-);
+)
 Container.propTypes = {
     className: PropTypes.string,
     children: PropTypes.any,
@@ -53,9 +53,9 @@ Container.propTypes = {
     md: PropTypes.number,
     lg: PropTypes.number,
     xl: PropTypes.number
-};
+}
 Container.defaultProps = {
     xs: 560
 }
 
-export default Container;
+export default Container

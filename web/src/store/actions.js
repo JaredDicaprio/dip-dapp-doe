@@ -1,11 +1,8 @@
-var DipDappDoe
-
-export function init(dipDappDoeInstance) {
-    DipDappDoe = dipDappDoeInstance
-}
+import getDipDappDoeInstance from "../contracts/dip-dapp-doe"
 
 export function fetchOpenGames() {
-    if (!DipDappDoe) throw new Error("The contract instance has not been set")
+    // NOTE: Using the read-only instance
+    const DipDappDoe = getDipDappDoeInstance(false)
 
     return (dispatch, getState) => {
         DipDappDoe.methods.getOpenGames().call().then(games => {

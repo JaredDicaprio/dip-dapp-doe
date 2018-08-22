@@ -1,0 +1,9 @@
+/* MAIN VIEW */
+
+#main .open-game-row {
+    margin-bottom: 15px;
+}
+
+#main .open-game-row img {
+    max-height: 23px;
+}

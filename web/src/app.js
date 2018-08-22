@@ -4,9 +4,11 @@ import { connect } from "react-redux"
 import Web3 from "web3"
 
 import getDipDappDoeInstance from "./contracts/dip-dapp-doe"
+import { init as actionsInit, fetchOpenGames } from "./store/actions"
 
-const MainView = () => <div>Main View</div>
-const NewGameView = () => <div>New Game View</div>
+import MainView from "./views/main"
+import Container from "./widgets/container"
+
 const GameView = () => <div>Game View</div>
 
 const LoadingView = () => <div>Loading View</div>
@@ -19,23 +21,41 @@ class App extends Component {
 
             this.DipDappDoe = getDipDappDoeInstance(window.web3)
 
-            web3.eth.net.getNetworkType().then(id => {
-                this.props.dispatch({ type: "SET_NETWORK_ID", networkId: id })
+            actionsInit(this.DipDappDoe)
+            this.checkWeb3Status()
+            this.checkInterval = setInterval(() => this.checkWeb3Status(), 1500)
 
-                return web3.eth.getAccounts()
-            }).then(accounts => {
-                this.props.dispatch({ type: "SET", accounts })
-                
-                this.addListeners()
-                this.props.dispatch({ type: "SET_CONNECTED" })
-            })
+            this.props.dispatch(fetchOpenGames(this.DipDappDoe))
         }
         else {
             this.props.dispatch({ type: "SET_UNSUPPORTED" })
         }
     }
 
-    addListeners(){
+    checkWeb3Status() {
+        web3.eth.net.isListening().then(listening => {
+            if (!listening) {
+                return this.props.dispatch({ type: "SET_DISCONNECTED" })
+            }
+
+            web3.eth.net.getNetworkType().then(id => {
+                if (this.props.status.networkId == id) {
+                    return
+                }
+
+                this.props.dispatch({ type: "SET_NETWORK_ID", networkId: id })
+
+                return web3.eth.getAccounts().then(accounts => {
+                    if (accounts.length != this.props.accounts.length || accounts[0] != this.props.accounts[0]) {
+                        this.props.dispatch({ type: "SET", accounts })
+                    }
+                    this.props.dispatch({ type: "SET_CONNECTED" })
+                })
+            })
+        })
+    }
+
+    addListeners() {
         this.DipDappDoe.events.GameCreated().subscribe(this.onGameCreated)
         this.DipDappDoe.events.GameAccepted().subscribe(this.onGameAccepted)
         this.DipDappDoe.events.GameStarted().subscribe(this.onGameStarted)
@@ -43,20 +63,21 @@ class App extends Component {
         this.DipDappDoe.events.GameEnded().subscribe(this.onGameEnded)
     }
 
-    onGameCreated(error, result){
-        
+    onGameCreated(error, result) {
+console.log(error, result)
+debugger;
     }
-    onGameAccepted(error, result){
-        
+    onGameAccepted(error, result) {
+
     }
-    onGameStarted(error, result){
-        
+    onGameStarted(error, result) {
+
     }
-    onPositionMarked(error, result){
-        
+    onPositionMarked(error, result) {
+
     }
-    onGameEnded(error, result){
-        
+    onGameEnded(error, result) {
+
     }
 
     render() {
@@ -67,14 +88,15 @@ class App extends Component {
         else if (!this.props.accounts || !this.props.accounts.length) return <MessageView message="Please, unlock your wallet or create an account" />
 
         return <div>
-            <Switch>
-                <Route path="/" exact component={MainView} />
-                <Route path="/new" exact component={NewGameView} />
-                <Route path="/games/:id" exact component={GameView} />
-                <Redirect to="/" />
-            </Switch>
+            <Container>
+                <Switch>
+                    <Route path="/" exact component={MainView} />
+                    <Route path="/games/:id" exact component={GameView} />
+                    <Redirect to="/" />
+                </Switch>
+            </Container>
         </div>
     }
 }
 
-export default connect(({ accounts, status }) => ({ accounts, status }))(App)
+export default connect(({ accounts, status, openGames }) => ({ accounts, status, openGames }))(App)

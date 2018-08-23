@@ -1,3 +1,3 @@
-const { deployDapp } = require("./lib.js");
+const { deployDapp } = require("./lib.js")
 
-deployDapp();
+deployDapp()

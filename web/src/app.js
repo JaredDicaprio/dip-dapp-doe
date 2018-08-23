@@ -6,12 +6,12 @@ import { isWeb3Injected, getInjectedWeb3 } from "./contracts/web3"
 import getDipDappDoeInstance from "./contracts/dip-dapp-doe"
 import { fetchOpenGames } from "./store/actions"
 
+import LoadingView from "./views/loading"
 import MainView from "./views/main"
 import Container from "./widgets/container"
 
 const GameView = () => <div>Game View</div>
 
-const LoadingView = () => <div>Loading View</div>
 const MessageView = props => <div>{props.message || ""}</div>
 
 class App extends Component {
@@ -68,8 +68,6 @@ class App extends Component {
     }
 
     addListeners() {
-        // Work in progress
-
         this.creationEvent = this.DipDappDoe.events.GameCreated({
             // filter: {myIndexedParam: [20,23], myOtherIndexedParam: '0x123456789...'}, // Using an array means OR: e.g. 20 or 23
             fromBlock: this.props.status.startingBlock || 0
@@ -78,44 +76,42 @@ class App extends Component {
             .on('changed', function (event) {
                 console.log('changed', event)
             })
-            .on('error', error => message.error(error && error.message || error))
+            .on('error', err => message.error(err && err.message || err))
 
         this.acceptedEvent = this.DipDappDoe.events.GameAccepted({
-            // filter: {myIndexedParam: [20,23], myOtherIndexedParam: '0x123456789...'}, // Using an array means OR: e.g. 20 or 23
+            // filter: { opponent: this.props.accounts && this.props.accounts[0] },
             fromBlock: this.props.status.startingBlock || 0
         })
             .on('data', event => this.onGameAccepted(event))
             .on('changed', function (event) {
                 console.log('changed', event)
             })
-            .on('error', error => message.error(error && error.message || error))
+            .on('error', err => message.error(err && err.message || err))
     }
 
     onGameCreated(event) {
         // console.log(event.returnValues.gameIdx)
-        this.props.dispatch(fetchOpenGames(this.DipDappDoe))
+        this.props.dispatch(fetchOpenGames())
     }
     onGameAccepted(event) {
         // console.log(event.returnValues.gameIdx)
-        this.props.dispatch(fetchOpenGames(this.DipDappDoe))
+        this.props.dispatch(fetchOpenGames())
     }
 
     render() {
-        if (this.props.status.loading) return <LoadingView />
+        if (this.props.status.loading) return <Container><LoadingView /></Container>
         else if (this.props.status.unsupported) return <MessageView message="Please, install Metamask for Chrome or Firefox" />
         else if (this.props.status.networkId != "ropsten") return <MessageView message="Please, switch to the Ropsten network" />
         else if (!this.props.status.connected) return <MessageView message="Your connection seems to be down" />
         else if (!this.props.accounts || !this.props.accounts.length) return <MessageView message="Please, unlock your wallet or create an account" />
 
-        return <div>
-            <Container>
-                <Switch>
-                    <Route path="/" exact component={MainView} />
-                    <Route path="/games/:id" exact component={GameView} />
-                    <Redirect to="/" />
-                </Switch>
-            </Container>
-        </div>
+        return <Container>
+            <Switch>
+                <Route path="/" exact component={MainView} />
+                <Route path="/games/:id" exact component={GameView} />
+                <Redirect to="/" />
+            </Switch>
+        </Container>
     }
 }
 

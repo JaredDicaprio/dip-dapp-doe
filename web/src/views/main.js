@@ -1,6 +1,6 @@
 import React, { Component } from "react"
 import { connect } from "react-redux"
-import { Row, Col, Divider, Button, Input, InputNumber, message } from "antd"
+import { Row, Col, Divider, Button, Input, InputNumber, message, notification } from "antd"
 import Media from "react-media"
 import getDipDappDoeInstance from "../contracts/dip-dapp-doe"
 import { getWebSocketWeb3 } from "../contracts/web3";
@@ -52,12 +52,19 @@ class MainView extends Component {
                 })
 
                 this.props.history.push(`/games/${tx.events.GameCreated.returnValues.gameIdx}`)
-                message.info("Your game has been created. Waiting for another user to accept it.")
+
+                notification.success({
+                    message: 'Game created',
+                    description: 'Your game has been created. Waiting for another user to accept it.',
+                });
             }).catch(err => {
                 this.setState({ creationLoading: false })
 
                 let msg = err.message.replace(/\.$/, "").replace(/Returned error: Error: MetaMask Tx Signature: /, "")
-                message.error(msg)
+                notification.error({
+                    message: 'Game creation failed',
+                    description: msg
+                });
             })
     }
 

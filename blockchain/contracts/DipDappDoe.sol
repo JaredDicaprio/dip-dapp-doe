@@ -31,10 +31,10 @@ contract DipDappDoe {
     // EVENTS
 
     event GameCreated(uint32 indexed gameIdx);
-    event GameAccepted(uint32 indexed gameIdx);
-    event GameStarted(uint32 indexed gameIdx);
-    event PositionMarked(uint32 indexed gameIdx);
-    event GameEnded(uint32 indexed gameIdx);
+    event GameAccepted(uint32 indexed gameIdx, address indexed opponent);
+    event GameStarted(uint32 indexed gameIdx, address indexed opponent);
+    event PositionMarked(uint32 indexed gameIdx, address indexed opponent);
+    event GameEnded(uint32 indexed gameIdx, address indexed opponent);
 
     constructor(uint16 givenTimeout) public {
         if(givenTimeout != 0) {
@@ -109,7 +109,7 @@ contract DipDappDoe {
         gamesData[gameIdx].players[1] = msg.sender;
         gamesData[gameIdx].lastTransactions[1] = now;
 
-        emit GameAccepted(gameIdx);
+        emit GameAccepted(gameIdx, gamesData[gameIdx].players[0]);
 
         // Remove from the available list (unordered)
         uint32 idxToDelete = gamesData[gameIdx].listIndex;
@@ -127,7 +127,8 @@ contract DipDappDoe {
         bytes32 computedHash = saltedHash(revealedRandomNumber, revealedSalt);
         if(computedHash != gamesData[gameIdx].creatorHash){
             gamesData[gameIdx].status = 12;
-            emit GameEnded(gameIdx);
+            emit GameEnded(gameIdx, msg.sender);
+            emit GameEnded(gameIdx, gamesData[gameIdx].players[1]);
             return;
         }
 
@@ -136,11 +137,11 @@ contract DipDappDoe {
         // Define the starting player
         if((revealedRandomNumber ^ gamesData[gameIdx].guestRandomNumber) & 0x01 == 0){
             gamesData[gameIdx].status = 1;
-            emit GameStarted(gameIdx);
+            emit GameStarted(gameIdx, gamesData[gameIdx].players[1]);
         }
         else {
             gamesData[gameIdx].status = 2;
-            emit GameStarted(gameIdx);
+            emit GameStarted(gameIdx, gamesData[gameIdx].players[1]);
         }
     }
 
@@ -155,17 +156,18 @@ contract DipDappDoe {
             require(gamesData[gameIdx].players[0] == msg.sender);
 
             cells[cell] = 1;
+            emit PositionMarked(gameIdx, gamesData[gameIdx].players[1]);
         }
         else if(gamesData[gameIdx].status == 2){
             require(gamesData[gameIdx].players[1] == msg.sender);
             
             cells[cell] = 2;
+            emit PositionMarked(gameIdx, gamesData[gameIdx].players[0]);
         }
         else {
             revert();
         }
 
-        emit PositionMarked(gameIdx);
 
         // Board indexes:
         //    0 1 2
@@ -186,14 +188,16 @@ contract DipDappDoe {
         (cells[0] & cells [4] & cells [8] != 0x0) || (cells[2] & cells [4] & cells [6] != 0x0)) {
             // winner
             gamesData[gameIdx].status = 10 + cells[cell];  // 11 or 12
-            emit GameEnded(gameIdx);
+            emit GameEnded(gameIdx, gamesData[gameIdx].players[0]);
+            emit GameEnded(gameIdx, gamesData[gameIdx].players[1]);
         }
         else if(cells[0] != 0x0 && cells[1] != 0x0 && cells[2] != 0x0 && 
             cells[3] != 0x0 && cells[4] != 0x0 && cells[5] != 0x0 && cells[6] != 0x0 && 
             cells[7] != 0x0 && cells[8] != 0x0) {
             // draw
             gamesData[gameIdx].status = 10;
-            emit GameEnded(gameIdx);
+            emit GameEnded(gameIdx, gamesData[gameIdx].players[0]);
+            emit GameEnded(gameIdx, gamesData[gameIdx].players[1]);
         }
         else {
             if(cells[cell] == 1){
@@ -237,6 +241,8 @@ contract DipDappDoe {
             gamesData[gameIdx].withdrawn[1] = true;
             gamesData[gameIdx].status = 12;
             msg.sender.transfer(gamesData[gameIdx].amount * 2);
+
+            emit GameEnded(gameIdx, gamesData[gameIdx].players[0]);
         }
         else if(status == 2){
             // player 1 claims
@@ -246,6 +252,8 @@ contract DipDappDoe {
             gamesData[gameIdx].withdrawn[0] = true;
             gamesData[gameIdx].status = 11;
             msg.sender.transfer(gamesData[gameIdx].amount * 2);
+
+            emit GameEnded(gameIdx, gamesData[gameIdx].players[1]);
         }
         else if(status == 10){
             if(gamesData[gameIdx].players[0] == msg.sender){

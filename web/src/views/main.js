@@ -26,7 +26,7 @@ class MainView extends Component {
         else if (typeof this.state.number == "undefined") return message.error("Please, choose a random number")
         else if (!this.state.salt) return message.error("Please, type a random string")
 
-        const DipDappDoe = getDipDappDoeInstance(window.web3)
+        const DipDappDoe = getDipDappDoeInstance(true)
 
         return DipDappDoe.methods.saltedHash(this.state.number, this.state.salt).call()
             .then(hash => {

@@ -15,6 +15,7 @@ class MainView extends Component {
         this.state = {
             showCreateGame: false,
             creationLoading: false,
+            acceptLoading: false,
             showAcceptModal: false,
             gameIdxToAccept: -1
         }
@@ -32,8 +33,9 @@ class MainView extends Component {
         else if (!this.state.salt) return message.error("Please, type a random string")
 
         const DipDappDoe = getDipDappDoeInstance(true)
+        const number = this.state.number % 256
 
-        return DipDappDoe.methods.saltedHash(this.state.number, this.state.salt).call()
+        return DipDappDoe.methods.saltedHash(number, this.state.salt).call()
             .then(hash => {
                 let web3 = getWebSocketWeb3()
                 let value = 0
@@ -52,7 +54,7 @@ class MainView extends Component {
                 this.props.dispatch({
                     type: "ADD_CREATED_GAME",
                     id: tx.events.GameCreated.returnValues.gameIdx,
-                    number: this.state.number,
+                    number,
                     salt: this.state.salt
                 })
 
@@ -101,34 +103,33 @@ class MainView extends Component {
 
             const DipDappDoe = getDipDappDoeInstance(true)
 
-            // TODO:
+            this.setState({ acceptLoading: true, showAcceptModal: false })
+
             // TRANSACTION
-            // return DipDappDoe.methods.acceptGame(game.id, values.number, values.nick)
-            //     .send({ value: game.amount, from: this.props.accounts[0] })
-            //     .then(tx => {
-            //         // this.setState({ creationLoading: false })
-            //         // if (!tx.events.GameCreated || !tx.events.GameCreated.returnValues) {
-            //         //     throw new Error("The transaction failed")
-            //         // }
-            //         notification.success({
-            //             message: 'Game accepted',
-            //             description: 'You have accepted the game. Waiting for creator to confirm.',
-            //         })
-            //         this.props.history.push(`/games/${game.id}`)
+            return DipDappDoe.methods.acceptGame(game.id, values.number, values.nick)
+                .send({ value: game.amount || 0, from: this.props.accounts[0] })
+                .then(tx => {
+                    this.setState({ acceptLoading: false })
 
-            //         this.acceptForm.resetFields()
-            //         this.setState({ showAcceptModal: false })
-            //     })
-            //     .catch(err => {
-            //         // this.setState({ creationLoading: false })
+                    if (!tx.events.GameAccepted || !tx.events.GameAccepted.returnValues) {
+                        throw new Error("The transaction failed")
+                    }
+                    this.props.history.push(`/games/${game.id}`)
 
-            //         let msg = err.message.replace(/\.$/, "").replace(/Returned error: Error: MetaMask Tx Signature: /, "")
-            //         notification.error({
-            //             message: 'Game acceptance failed',
-            //             description: msg
-            //         })
-            //         this.setState({ showAcceptModal: false })
-            //     })
+                    notification.success({
+                        message: 'Game accepted',
+                        description: 'You have accepted the game. Waiting for creator to confirm.',
+                    })
+                })
+                .catch(err => {
+                    this.setState({ acceptLoading: false })
+
+                    let msg = err.message.replace(/\.$/, "").replace(/Returned error: Error: MetaMask Tx Signature: /, "")
+                    notification.error({
+                        message: 'Failed to accept the game',
+                        description: msg
+                    })
+                })
 
         })
     }
@@ -155,9 +156,14 @@ class MainView extends Component {
 
             <Divider />
 
-            <div>
-                {this.props.openGames.map((game, idx) => this.renderOpenGameRow(game, idx))}
-            </div>
+            {
+                this.state.acceptLoading ?
+                    <div className="text-center" style={{ margin: 50 }}>Please, wait  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
+                    <div>
+                        {this.props.openGames.map((game, idx) => this.renderOpenGameRow(game, idx))}
+                    </div>
+            }
+
 
             <Media query="(max-width: 767px)" render={() => [
                 <Divider />,
@@ -179,7 +185,7 @@ class MainView extends Component {
                     <Input className="margin-bottom" placeholder="Nick name" name="nick" onChange={ev => this.handleValue(ev)} />
                 </Col>
                 <Col span={12}>
-                    <InputNumber className="width-100" min={0} placeholder="Random number" name="number" onChange={value => this.setState({ number: (value % 256) })} />
+                    <InputNumber className="width-100" min={0} placeholder="Random number" name="number" onChange={value => this.setState({ number: value })} />
                 </Col>
                 <Col span={12}>
                     <Input placeholder="Type some text" name="salt" onChange={ev => this.handleValue(ev)} />

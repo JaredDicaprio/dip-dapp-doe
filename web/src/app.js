@@ -9,9 +9,8 @@ import { fetchOpenGames } from "./store/actions"
 import LoadingView from "./views/loading"
 import MessageView from "./views/message"
 import MainView from "./views/main"
+import GameView from "./views/game"
 import Container from "./widgets/container"
-
-const GameView = () => <div>Game View</div>
 
 class App extends Component {
     componentDidMount() {
@@ -26,7 +25,7 @@ class App extends Component {
             }).then(() => {
                 this.addListeners()
 
-                this.checkInterval = setInterval(() => this.checkWeb3Status(), 1500)
+                this.checkInterval = setInterval(() => this.checkWeb3Status(), 1000)
 
                 this.props.dispatch(fetchOpenGames(this.DipDappDoe))
             })
@@ -68,7 +67,7 @@ class App extends Component {
             fromBlock: this.props.status.startingBlock || 0
         })
             .on('data', event => this.onGameCreated(event))
-            .on('changed', event => console.log('changed', event))
+            // .on('changed', event => console.log('changed', event))
             .on('error', err => message.error(err && err.message || err))
 
         this.acceptedEvent = this.DipDappDoe.events.GameAccepted({
@@ -76,7 +75,7 @@ class App extends Component {
             fromBlock: this.props.status.startingBlock || 0
         })
             .on('data', event => this.onGameAccepted(event))
-            .on('changed', event => console.log('changed', event))
+            // .on('changed', event => console.log('changed', event))
             .on('error', err => message.error(err && err.message || err))
     }
 

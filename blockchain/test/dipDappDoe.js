@@ -77,10 +77,8 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(nick2, "", "The player 2 should be empty");
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
-        let [lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(lastTransaction1.toNumber(), 0, "The last timestamp of player 1 should be set");
-        assert.equal(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be empty");
-        assert.deepEqual(rest2, [], "The response should have 3 elements");
+        let lastTransaction = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransaction.toNumber(), 0, "The last timestamp should be set");
 
         let [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
         assert.equal(p1, player1, "The address of player 1 should be set");
@@ -119,10 +117,8 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(nick2, "", "The player 2 should be empty");
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
-        let [lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(lastTransaction1.toNumber(), 0, "The last timestamp of player 1 should be set");
-        assert.equal(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be empty");
-        assert.deepEqual(rest2, [], "The response should have 3 elements");
+        let lastTransaction = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransaction.toNumber(), 0, "The last timestamp should be set");
 
         let [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
         assert.equal(p1, player1, "The address of player 1 should be set");
@@ -239,10 +235,8 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(nick2, "Kathy", "The player 2 should be Kathy");
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
-        [lastTransaction1, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(lastTransaction1.toNumber(), 0, "The last timestamp of player 1 should be set");
-        assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
-        assert.deepEqual(rest2, [], "The response should have 3 elements");
+        lastTransaction = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransaction.toNumber(), 0, "The last timestamp should be set");
 
         [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
         assert.equal(p1, player1, "The address of player 1 should be set");
@@ -456,10 +450,8 @@ contract('DipDappDoe', function (accounts) {
 
         await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
 
-        let [lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(lastTransaction1pre.toNumber(), 0, "The last timestamp of player 1 should be set");
-        assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
-        assert.deepEqual(rest2, [], "The response should have 3 elements");
+        let lastTransactionpre = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransactionpre.toNumber(), 0, "The last timestamp should be set");
 
         await new Promise(resolve => setTimeout(resolve, 1000));
         await gamesInstance.confirmGame(gameIdx, 100, "initial salt", {from: player1});
@@ -484,11 +476,9 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(nick2, "Dana", "The player 2 should be Dana");
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
-        let lastTransaction1post;
-        [lastTransaction1post, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(lastTransaction1post.toNumber(), lastTransaction1pre.toNumber(), "The last timestamp of player 1 should be newer");
-        assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
-        assert.deepEqual(rest2, [], "The response should have 3 elements");
+        let lastTransactionpost;
+        lastTransactionpost = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransactionpost.toNumber(), lastTransactionpre.toNumber(), "The last timestamp should be newer");
 
         const [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
         assert.equal(p1, player1, "The address of player 1 should still be set");
@@ -508,10 +498,8 @@ contract('DipDappDoe', function (accounts) {
 
         await gamesInstance.acceptGame(gameIdx, 200, "Dana", {from: player2});
 
-        let [lastTransaction1pre, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(lastTransaction1pre.toNumber(), 0, "The last timestamp of player 1 should be set");
-        assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
-        assert.deepEqual(rest2, [], "The response should have 3 elements");
+        let lastTransactionpre = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransactionpre.toNumber(), 0, "The last timestamp should be set");
 
         await new Promise(resolve => setTimeout(resolve, 1000));
         await gamesInstance.confirmGame(gameIdx, 123, "initial salt", {from: player1});
@@ -536,11 +524,8 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(nick2, "Dana", "The player 2 should be Dana");
         assert.deepEqual(rest, [], "The response should have 5 elements");
 
-        let lastTransaction1post;
-        [lastTransaction1post, lastTransaction2, ...rest2] = await gamesInstance.getGameTimestamps(gameIdx);
-        assert.isAbove(lastTransaction1post.toNumber(), lastTransaction1pre.toNumber(), "The last timestamp of player 1 should be newer");
-        assert.isAbove(lastTransaction2.toNumber(), 0, "The last timestamp of player 2 should be set");
-        assert.deepEqual(rest2, [], "The response should have 3 elements");
+        let lastTransactionpost = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransactionpost.toNumber(), lastTransactionpre.toNumber(), "The last timestamp should be newer");
 
         const [p1, p2, ...rest3] = await gamesInstance.getGamePlayers(gameIdx);
         assert.equal(p1, player1, "The address of player 1 should still be set");
@@ -629,6 +614,11 @@ contract('DipDappDoe', function (accounts) {
         
         // ------ GAME 1 ------
 
+        let lastTransactionpre = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransactionpre.toNumber(), 0, "The last timestamp should be set");
+
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
         // 1 0 0
         // 0 0 0
         // 0 0 0
@@ -644,6 +634,9 @@ contract('DipDappDoe', function (accounts) {
         assert.equal(emittedEvents[0].args.gameIdx.toNumber(), gameIdx, "The marked game should match");
         assert.equal(emittedEvents[0].args.opponent, player2, "The opponent should be player 2");
         
+        let lastTransactionpost = await gamesInstance.getGameTimestamp(gameIdx);
+        assert.isAbove(lastTransactionpost.toNumber(), lastTransactionpre.toNumber(), "The last timestamp should be newer");
+
         // 1 0 2
         // 0 0 0
         // 0 0 0
@@ -1976,6 +1969,50 @@ contract('DipDappDoe', function (accounts) {
         expected = expected.minus(web3.toBigNumber(tx1.receipt.gasUsed).times(testingGasPrice));
 
         assert(balance1post.eq(expected), "Player 1's balance should have increased by 0.02 ether minus gas");
+    });
+    
+    it("should accept the withdrawal of player 2 if the creator does not confirm", async function () {
+        const eventWatcher = gamesInstance.GameCreated();
+        
+        // Create
+        let hash = await libStringInstance.saltedHash.call(100, "initial salt");
+        await gamesInstance.createGame(hash, "James", { from: player1, value: web3.toWei(0.01, "ether") });
+        
+        let emittedEvents = await eventWatcher.get();
+        let gameIdx = emittedEvents[0].args.gameIdx.toNumber();
+        
+        // Start
+        await gamesInstance.acceptGame(gameIdx, 234, "Jane", { from: player2, value: web3.toWei(0.01, "ether") });
+        
+        let [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 0, "The game should be accepted but not started");
+
+        try {
+            await gamesInstance.withdraw(gameIdx, { from: player2 });
+            assert.fail("The transaction should have thrown an error");
+        }
+        catch (err) {
+            assert.include(err.message, "revert", "The transaction should be reverted");
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Player 2 claims
+
+        const balance2pre = await web3.eth.getBalance(player2);
+
+        const tx2 = await gamesInstance.withdraw(gameIdx, { from: player2 });
+
+        [cells, status] = await gamesInstance.getGameInfo(gameIdx);
+        assert.equal(status.toNumber(), 12, "The game should be for player 2");
+
+        const balance2post = await web3.eth.getBalance(player2);
+
+        // player 2 balance
+        let expected = balance2pre.plus(web3.toWei(0.02, "ether"));
+        expected = expected.minus(web3.toBigNumber(tx2.receipt.gasUsed).times(testingGasPrice));
+
+        assert(balance2post.eq(expected), "Player 2's balance should have increased by 0.02 ether minus gas");
     });
     
     it("should reject withdrawals from the game loser", async function () {

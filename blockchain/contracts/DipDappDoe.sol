@@ -6,7 +6,7 @@ import "./LibString.sol";
 contract DipDappDoe {
     // DATA
     struct Game {
-        uint32 listIndex;   // position in openGames[]
+        uint32 openListIndex;   // position in openGames[]
         uint8[9] cells;  // [123 / 456 / 789] containing [0 => nobody, 1 => X, 2 => O]
         
         // 0 => not started, 1 => player 1, 2 => player 2
@@ -17,7 +17,7 @@ contract DipDappDoe {
 
         address[2] players;
         string[2] nicks;
-        uint[2] lastTransactions; // timestamp => block number
+        uint lastTransaction; // timestamp => block number
         bool[2] withdrawn;
 
         bytes32 creatorHash;
@@ -62,12 +62,9 @@ contract DipDappDoe {
         );
     }
 
-    function getGameTimestamps(uint32 gameIdx) public view 
-    returns (uint lastTransaction1, uint lastTransaction2) {
-        return (
-            gamesData[gameIdx].lastTransactions[0],
-            gamesData[gameIdx].lastTransactions[1]
-        );
+    function getGameTimestamp(uint32 gameIdx) public view 
+    returns (uint lastTransaction) {
+        return (gamesData[gameIdx].lastTransaction);
     }
 
     function getGamePlayers(uint32 gameIdx) public view 
@@ -83,12 +80,12 @@ contract DipDappDoe {
     function createGame(bytes32 randomNumberHash, string nick) public payable returns (uint32 gameIdx) {
         require(nextGameIdx + 1 > nextGameIdx);
 
-        gamesData[nextGameIdx].listIndex = uint32(openGames.length);
+        gamesData[nextGameIdx].openListIndex = uint32(openGames.length);
         gamesData[nextGameIdx].creatorHash = randomNumberHash;
         gamesData[nextGameIdx].amount = msg.value;
         gamesData[nextGameIdx].nicks[0] = nick;
         gamesData[nextGameIdx].players[0] = msg.sender;
-        gamesData[nextGameIdx].lastTransactions[0] = now;
+        gamesData[nextGameIdx].lastTransaction = now;
         openGames.push(nextGameIdx);
 
         gameIdx = nextGameIdx;
@@ -107,14 +104,14 @@ contract DipDappDoe {
         gamesData[gameIdx].guestRandomNumber = randomNumber;
         gamesData[gameIdx].nicks[1] = nick;
         gamesData[gameIdx].players[1] = msg.sender;
-        gamesData[gameIdx].lastTransactions[1] = now;
+        gamesData[gameIdx].lastTransaction = now;
 
         emit GameAccepted(gameIdx, gamesData[gameIdx].players[0]);
 
         // Remove from the available list (unordered)
-        uint32 idxToDelete = gamesData[gameIdx].listIndex;
+        uint32 idxToDelete = uint32(gamesData[gameIdx].openListIndex);
         openGames[idxToDelete] = openGames[openGames.length - 1];
-        gamesData[gameIdx].listIndex = idxToDelete;
+        gamesData[gameIdx].openListIndex = idxToDelete;
         openGames.length--;
     }
 
@@ -132,7 +129,7 @@ contract DipDappDoe {
             return;
         }
 
-        gamesData[gameIdx].lastTransactions[0] = now;
+        gamesData[gameIdx].lastTransaction = now;
 
         // Define the starting player
         if((revealedRandomNumber ^ gamesData[gameIdx].guestRandomNumber) & 0x01 == 0){
@@ -167,6 +164,8 @@ contract DipDappDoe {
         else {
             revert();
         }
+
+        gamesData[gameIdx].lastTransaction = now;
 
 
         // Board indexes:
@@ -219,24 +218,47 @@ contract DipDappDoe {
         uint8 status = gamesData[gameIdx].status;
 
         if(status == 0) {
-            require(gamesData[gameIdx].players[0] == msg.sender);
-            require(gamesData[gameIdx].players[1] == 0x0);
-            require(now - gamesData[gameIdx].lastTransactions[0] > timeout);
+            require((now - gamesData[gameIdx].lastTransaction) > timeout);
+            
+            // Player 1 cancels the non-accepted game
+            if(gamesData[gameIdx].players[0] == msg.sender) {
+                // checking !withdrawn[0] is redundant, status would not be 0
+                require(gamesData[gameIdx].players[1] == 0x0);
 
-            gamesData[gameIdx].withdrawn[0] = true;
-            gamesData[gameIdx].status = 10; // consider it ended in draw
-            msg.sender.transfer(gamesData[gameIdx].amount);
+                gamesData[gameIdx].withdrawn[0] = true;
+                gamesData[gameIdx].status = 10; // consider it ended in draw
+                msg.sender.transfer(gamesData[gameIdx].amount);
+                
+                // The game was open
+                // Remove from the available list (unordered)
+                uint32 openListIdxToDelete = uint32(gamesData[gameIdx].openListIndex);
+                openGames[openListIdxToDelete] = openGames[openGames.length - 1];
+                gamesData[gameIdx].openListIndex = openListIdxToDelete;
+                openGames.length--;
 
-            // Remove from the available list (unordered)
-            uint32 idxToDelete = gamesData[gameIdx].listIndex;
-            openGames[idxToDelete] = openGames[openGames.length - 1];
-            gamesData[gameIdx].listIndex = idxToDelete;
-            openGames.length--;
+                emit GameEnded(gameIdx, msg.sender);
+            }
+            // Player 2 claims the non-confirmed game
+            else if(gamesData[gameIdx].players[1] == msg.sender) {
+                // checking !withdrawn[1] is redundant, status would not be 0
+
+                gamesData[gameIdx].withdrawn[1] = true;
+                gamesData[gameIdx].status = 12; // consider it won by P2
+                msg.sender.transfer(gamesData[gameIdx].amount * 2);
+            
+                // The game was not open: no need to clean it
+                // from the openGames[] list
+
+                emit GameEnded(gameIdx, msg.sender);
+            }
+            else {
+                revert();
+            }
         }
         else if(status == 1) {
             // player 2 claims
             require(gamesData[gameIdx].players[1] == msg.sender);
-            require(now - gamesData[gameIdx].lastTransactions[0] > timeout);
+            require(now - gamesData[gameIdx].lastTransaction > timeout);
 
             gamesData[gameIdx].withdrawn[1] = true;
             gamesData[gameIdx].status = 12;
@@ -247,7 +269,7 @@ contract DipDappDoe {
         else if(status == 2){
             // player 1 claims
             require(gamesData[gameIdx].players[0] == msg.sender);
-            require(now - gamesData[gameIdx].lastTransactions[1] > timeout);
+            require(now - gamesData[gameIdx].lastTransaction > timeout);
 
             gamesData[gameIdx].withdrawn[0] = true;
             gamesData[gameIdx].status = 11;

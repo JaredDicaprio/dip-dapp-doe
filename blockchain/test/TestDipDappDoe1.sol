@@ -44,8 +44,7 @@ contract TestDipDappDoe1 {
         uint amount;
         string memory nick1;
         string memory nick2;
-        uint lastTransaction1;
-        uint lastTransaction2;
+        uint lastTransaction;
 
         bytes32 hash = gamesInstance.saltedHash(123, "my salt goes here");
         uint32 gameIdx = gamesInstance.createGame(hash, "John");
@@ -70,9 +69,8 @@ contract TestDipDappDoe1 {
         Assert.equal(nick1, "John", "The nick should be John");
         Assert.isEmpty(nick2, "Nick2 should be empty");
 
-        (lastTransaction1, lastTransaction2) = gamesInstance.getGameTimestamps(gameIdx);
-        Assert.isAbove(lastTransaction1, 0, "The first player's transaction timestamp should be set");
-        Assert.equal(lastTransaction2, 0, "The second player's transaction timestamp should be empty");
+        lastTransaction = gamesInstance.getGameTimestamp(gameIdx);
+        Assert.isAbove(lastTransaction, 0, "The first player's transaction timestamp should be set");
     }
 
     function testGameAccepted() public {
@@ -81,8 +79,7 @@ contract TestDipDappDoe1 {
         uint amount;
         string memory nick1;
         string memory nick2;
-        uint lastTransaction1;
-        uint lastTransaction2;
+        uint lastTransaction;
 
         uint32[] memory openGames = gamesInstance.getOpenGames();
         Assert.equal(openGames.length, 1, "One game should be available");
@@ -109,8 +106,7 @@ contract TestDipDappDoe1 {
         Assert.equal(nick1, "John", "The nick should be John");
         Assert.equal(nick2, "Mary", "The nick should be Mary");
 
-        (lastTransaction1, lastTransaction2) = gamesInstance.getGameTimestamps(gameIdx);
-        Assert.isAbove(lastTransaction1, 0, "The first player's transaction timestamp should be set");
-        Assert.isAbove(lastTransaction2, 0, "The second player's transaction timestamp should be set");
+        lastTransaction = gamesInstance.getGameTimestamp(gameIdx);
+        Assert.isAbove(lastTransaction, 0, "The first player's transaction timestamp should be set");
     }
 }

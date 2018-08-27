@@ -1,17 +1,22 @@
 import React, { Component } from "react"
 import { connect } from "react-redux"
-import { Row, Col, Divider, Button, Input, InputNumber, message, notification } from "antd"
+import { Row, Col, Divider, Button, Input, InputNumber, Spin, Icon, message, notification } from "antd"
+
 import Media from "react-media"
 import getDipDappDoeInstance from "../contracts/dip-dapp-doe"
-import { getWebSocketWeb3 } from "../contracts/web3";
+import { getWebSocketWeb3 } from "../contracts/web3"
+import ConfirmAcceptModal from "../widgets/confirm-accept-modal"
 
 class MainView extends Component {
     constructor(props) {
         super(props)
+        this.acceptForm = null
 
         this.state = {
             showCreateGame: false,
-            creationLoading: false
+            creationLoading: false,
+            showAcceptModal: false,
+            gameIdxToAccept: -1
         }
     }
 
@@ -20,7 +25,7 @@ class MainView extends Component {
         this.setState({ [ev.target.name]: ev.target.value })
     }
 
-    startGame() {
+    createGame() {
         if (!this.state.nick) return message.error("Please, choose a nick")
         else if (this.state.nick.length < 2) return message.error("Please, choose a longer nick")
         else if (typeof this.state.number == "undefined") return message.error("Please, choose a random number")
@@ -56,7 +61,7 @@ class MainView extends Component {
                 notification.success({
                     message: 'Game created',
                     description: 'Your game has been created. Waiting for another user to accept it.',
-                });
+                })
             }).catch(err => {
                 this.setState({ creationLoading: false })
 
@@ -64,12 +69,68 @@ class MainView extends Component {
                 notification.error({
                     message: 'Game creation failed',
                     description: msg
-                });
+                })
             })
     }
 
+    saveAcceptFormRef(ref) {
+        this.acceptForm = ref
+    }
+
+    showAcceptGameModal(idx) {
+        if (!this.acceptForm) return
+
+        this.setState({ showAcceptModal: true, gameIdxToAccept: idx })
+    }
+
+    hideAcceptGameModal() {
+        this.setState({ showAcceptModal: false })
+    }
+
     acceptGame() {
-        // Work in progress
+        const game = this.props.openGames[this.state.gameIdxToAccept]
+
+        this.acceptForm.validateFields((err, values) => {
+            if (err) return
+
+            if (!values.nick) return message.error("Please, choose a nick")
+            else if (values.nick.length < 2) return message.error("Please, choose a longer nick")
+            else if (typeof values.number == "undefined") return message.error("Please, choose a random number")
+
+            values.number = values.number % 256
+
+            const DipDappDoe = getDipDappDoeInstance(true)
+
+            // TODO:
+            // TRANSACTION
+            // return DipDappDoe.methods.acceptGame(game.id, values.number, values.nick)
+            //     .send({ value: game.amount, from: this.props.accounts[0] })
+            //     .then(tx => {
+            //         // this.setState({ creationLoading: false })
+            //         // if (!tx.events.GameCreated || !tx.events.GameCreated.returnValues) {
+            //         //     throw new Error("The transaction failed")
+            //         // }
+            //         notification.success({
+            //             message: 'Game accepted',
+            //             description: 'You have accepted the game. Waiting for creator to confirm.',
+            //         })
+            //         this.props.history.push(`/games/${game.id}`)
+
+            //         this.acceptForm.resetFields()
+            //         this.setState({ showAcceptModal: false })
+            //     })
+            //     .catch(err => {
+            //         // this.setState({ creationLoading: false })
+
+            //         let msg = err.message.replace(/\.$/, "").replace(/Returned error: Error: MetaMask Tx Signature: /, "")
+            //         notification.error({
+            //             message: 'Game acceptance failed',
+            //             description: msg
+            //         })
+            //         this.setState({ showAcceptModal: false })
+            //     })
+
+        })
     }
 
     renderOpenGameRow(game, idx) {
@@ -82,7 +143,7 @@ class MainView extends Component {
                 {game.nick1} {game.amount && game.amount != "0" ? <small>({web3.utils.fromWei(game.amount)} Ξ)</small> : null}
             </Col>
             <Col xs={9} sm={6}>
-                <Button type="primary" className="width-100">Accept</Button>
+                <Button type="primary" className="width-100" onClick={() => this.showAcceptGameModal(idx)}>Accept</Button>
             </Col>
         </Row>
     }
@@ -118,7 +179,7 @@ class MainView extends Component {
                     <Input className="margin-bottom" placeholder="Nick name" name="nick" onChange={ev => this.handleValue(ev)} />
                 </Col>
                 <Col span={12}>
-                    <InputNumber className="width-100" placeholder="Random number" name="number" onChange={value => this.setState({ number: (value % 256) })} />
+                    <InputNumber className="width-100" min={0} placeholder="Random number" name="number" onChange={value => this.setState({ number: (value % 256) })} />
                 </Col>
                 <Col span={12}>
                     <Input placeholder="Type some text" name="salt" onChange={ev => this.handleValue(ev)} />
@@ -141,8 +202,8 @@ class MainView extends Component {
 
                     {
                         this.state.creationLoading ?
-                            <span>Please, wait...</span> :
-                            <Button type="primary" className="width-100" onClick={() => this.startGame()}>Start new game</Button>
+                            <div className="text-center">Please, wait  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
+                            <Button type="primary" className="width-100" onClick={() => this.createGame()}>Start new game</Button>
                     }
                 </Col>
             </Row>
@@ -177,6 +238,12 @@ class MainView extends Component {
                     matches => matches ? this.renderMobile() : this.renderDesktop()
                 }
             </Media>
+            <ConfirmAcceptModal
+                visible={this.state.showAcceptModal}
+                ref={ref => this.saveAcceptFormRef(ref)}
+                onCancel={() => this.hideAcceptGameModal()}
+                onAccept={() => this.acceptGame()}
+            />
         </div>
     }
 }

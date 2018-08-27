@@ -7,12 +7,11 @@ import getDipDappDoeInstance from "./contracts/dip-dapp-doe"
 import { fetchOpenGames } from "./store/actions"
 
 import LoadingView from "./views/loading"
+import MessageView from "./views/message"
 import MainView from "./views/main"
 import Container from "./widgets/container"
 
 const GameView = () => <div>Game View</div>
-
-const MessageView = props => <div>{props.message || ""}</div>
 
 class App extends Component {
     componentDidMount() {
@@ -51,10 +50,6 @@ class App extends Component {
             }
 
             return web3.eth.net.getNetworkType().then(id => {
-                if (this.props.status.networkId == id) {
-                    return
-                }
-
                 this.props.dispatch({ type: "SET_NETWORK_ID", networkId: id })
 
                 return web3.eth.getAccounts().then(accounts => {
@@ -73,19 +68,15 @@ class App extends Component {
             fromBlock: this.props.status.startingBlock || 0
         })
             .on('data', event => this.onGameCreated(event))
-            .on('changed', function (event) {
-                console.log('changed', event)
-            })
+            .on('changed', event => console.log('changed', event))
             .on('error', err => message.error(err && err.message || err))
 
         this.acceptedEvent = this.DipDappDoe.events.GameAccepted({
-            // filter: { opponent: this.props.accounts && this.props.accounts[0] },
+            filter: { opponent: this.props.accounts && this.props.accounts[0] },
             fromBlock: this.props.status.startingBlock || 0
         })
             .on('data', event => this.onGameAccepted(event))
-            .on('changed', function (event) {
-                console.log('changed', event)
-            })
+            .on('changed', event => console.log('changed', event))
             .on('error', err => message.error(err && err.message || err))
     }
 

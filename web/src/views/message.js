@@ -1,13 +1,12 @@
 import React from "react"
-import { Row, Col, Spin } from "antd"
+import { Row, Col } from "antd"
 
-export default () => <div id="loading">
+export default props => <div id="message">
     <Row type="flex" justify="center">
         <Col xs={24} sm={18} md={12}>
             <div className="card text-center">
                 <h1 className="light">Dip Dapp Doe</h1>
-                <p className="light">Connecting to the blockchain. Please wait...</p>
-                <Spin />
+                <p className="light">{props.message}</p>
             </div>
         </Col>
     </Row>

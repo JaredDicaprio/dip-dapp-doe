@@ -6,8 +6,12 @@ export function fetchOpenGames() {
 
     return (dispatch, getState) => {
         DipDappDoe.methods.getOpenGames().call().then(games => {
-            return Promise.all(games.map(game => {
-                return DipDappDoe.methods.getGameInfo(game).call()
+            return Promise.all(games.map(gameId => {
+                return DipDappDoe.methods.getGameInfo(gameId).call()
+                    .then(gameData => {
+                        gameData.id = gameId
+                        return gameData
+                    })
             })).then(games => {
                 dispatch({ type: "SET", openGames: games })
             })

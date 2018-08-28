@@ -5,6 +5,8 @@ import { Row, Col, Divider, Button, Spin, Icon, message, notification } from "an
 import Media from "react-media"
 import getDipDappDoeInstance from "../contracts/dip-dapp-doe"
 import { getWebSocketWeb3, getInjectedWeb3 } from "../contracts/web3"
+import LoadingView from "../views/loading"
+import MessageView from "../views/message"
 
 const CONTRACT_TIMEOUT = 1000 * 60 * 10 // 10 minutes by default
 
@@ -199,7 +201,7 @@ class GameView extends Component {
     // Transactions
 
     checkConfirmGame(game) {
-        if (game.status != "0" || !game.player2 || game.player1 != this.props.accounts[0]) {
+        if (game.status != "0" || game.player2.match(/^0x0+$/) || game.player1 != this.props.accounts[0]) {
             return
         }
 
@@ -220,13 +222,17 @@ class GameView extends Component {
             .then(tx => {
                 this.setState({ confirmLoading: false })
 
-                if (!tx.events.GameConfirmed || !tx.events.GameConfirmed.returnValues) {
+                if (!tx.events.GameStarted || !tx.events.GameStarted.returnValues) {
                     throw new Error("The transaction failed")
                 }
 
                 notification.success({
                     message: 'Game confirmed',
                     description: 'The game is on. Good luck!',
+                })
+
+                return this.fetchGameStatus().then(game => {
+                    this.setState({ game })
                 })
             })
             .catch(err => {
@@ -275,8 +281,6 @@ class GameView extends Component {
 
                 return this.fetchGameStatus().then(game => {
                     this.setState({ game, loadingGameInfo: false })
-
-                    return this.checkLastPositionLeft(game)
                 })
             })
             .catch(err => {
@@ -295,7 +299,7 @@ class GameView extends Component {
             (this.state.game.status == "2" && this.state.game.player2 != this.props.accounts[0])) {
             return
         }
-        else if(["0", "10", "11", "12"].includes(this.state.game.status)) {
+        else if (["0", "10", "11", "12"].includes(this.state.game.status)) {
             return
         }
         if (this.state.game.cells[cell] != 0) {
@@ -321,7 +325,9 @@ class GameView extends Component {
                     this.setState({ game, loadingGameInfo: false })
 
                     // only makes sense if you play against yourself
-                    return this.checkLastPositionLeft(game)
+                    if (game.player1 == game.player2) {
+                        return this.checkLastPositionLeft(game)
+                    }
                 })
             })
             .catch(err => {
@@ -340,7 +346,7 @@ class GameView extends Component {
     getStatus() {
         if (!this.state.game || !this.props.accounts) return ""
         else if (this.state.game.status == "0") {
-            if (!this.state.game.player2) {
+            if (this.state.game.player2.match(/^0x0+$/)) {
                 return "Waiting for an opponent to accept the game"
             }
             else {
@@ -348,7 +354,7 @@ class GameView extends Component {
                     return "You need to confirm the game..."
                 }
                 else {
-                    return `Waiting for ${this.state.game.nick2} to confirm the game`
+                    return `Waiting for ${this.state.game.nick1} to confirm the game`
                 }
             }
         }
@@ -357,7 +363,7 @@ class GameView extends Component {
                 return "It's your turn"
             }
             else {
-                return `Waiting for ${this.state.game.nick2}`
+                return `Waiting for ${this.state.game.nick1}`
             }
         }
         else if (this.state.game.status == "2") {
@@ -365,7 +371,7 @@ class GameView extends Component {
                 return "It's your turn"
             }
             else {
-                return `Waiting for ${this.state.game.nick1}`
+                return `Waiting for ${this.state.game.nick2}`
             }
         }
         else if (this.state.game.status == "10") {
@@ -390,41 +396,41 @@ class GameView extends Component {
     }
 
     getTimeStatus() {
-        let diff = 0, action = "", subject = ""
+        let diff = 0, action = "", subject = "", message = ""
 
         if (!this.state.game || !this.props.accounts) return "-"
         else if (this.state.game.status == "0") {
-            if (!this.state.game.player2) {
-                diff = (this.state.game.lastTransaction1 + CONTRACT_TIMEOUT) - Date.now()
-                subject = (this.state.game.player1 == this.props.accounts[0]) ? "you" : this.state.game.nick1
+            if (this.state.game.player2.match(/^0x0+$/)) {
+                diff = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
+                subject = (this.state.game.player1 == this.props.accounts[0]) ? "You" : this.state.game.nick1
                 action = "cancel the game"
             }
             else {
-                diff = (this.state.game.lastTransaction2 + CONTRACT_TIMEOUT) - Date.now()
-                subject = (this.state.game.player2 == this.props.accounts[0]) ? "you" : this.state.game.nick2
+                diff = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
+                subject = (this.state.game.player2 == this.props.accounts[0]) ? "You" : this.state.game.nick2
                 action = "claim the game"
             }
         }
         else if (this.state.game.status == "1") {
-            diff = (this.state.game.lastTransaction2 + CONTRACT_TIMEOUT) - Date.now()
-            action = "claim the game"
-
-            if (this.state.game.player1 == this.props.accounts[0]) {
-                subject = "you"
-            }
-            else {
-                subject = this.state.game.nick1
-            }
-        }
-        else if (this.state.game.status == "2") {
-            diff = (this.state.game.lastTransaction1 + CONTRACT_TIMEOUT) - Date.now()
+            diff = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
             action = "claim the game"
 
             if (this.state.game.player2 == this.props.accounts[0]) {
-                subject = "you"
+                subject = "You"
             }
             else {
                 subject = this.state.game.nick2
+            }
+        }
+        else if (this.state.game.status == "2") {
+            diff = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
+            action = "claim the game"
+
+            if (this.state.game.player1 == this.props.accounts[0]) {
+                subject = "You"
+            }
+            else {
+                subject = this.state.game.nick1
             }
         }
         else {
@@ -564,7 +570,9 @@ class GameView extends Component {
                             <div>
                                 <p className="light">{this.getStatus()}</p>
                                 <p className="light">{this.getTimeStatus()}</p>
-                                <p className="light">Game bet: {web3.utils.fromWei(this.state.game.amount)} Ξ</p>
+                                {
+                                    this.state.game ? <p className="light">Game bet: {web3.utils.fromWei(this.state.game.amount)} Ξ</p> : null
+                                }
 
                                 <Media query="(max-width: 767px)" render={() => [
                                     <Divider />,
@@ -580,6 +588,13 @@ class GameView extends Component {
     }
 
     render() {
+        if (this.state.loadingGameInfo) {
+            return <LoadingView />
+        }
+        else if (!this.state.game || !this.state.game.player1 || this.state.game.player1.match(/^0x0+$/)) {
+            return <MessageView message="It looks like the game does not exist" />
+        }
+
         return <div id="game">
             <Media query="(max-width: 767px)">
                 {

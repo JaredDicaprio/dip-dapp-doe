@@ -1,6 +1,6 @@
 import { getInjectedWeb3, getWebSocketWeb3 } from "./web3"
 import dipDappDoeAbi from "./dip-dapp-doe.json"
-const CONTRACT_ADDRESS = "0xfCF380b4D6Addd35c53d14DF17D4e75d8f58feE5"
+const CONTRACT_ADDRESS = "0xf42F14d2cE796fec7Cd8a2D575dDCe402F2f3F8F"
 
 export default function (useBrowserWeb3 = false) {
     let web3

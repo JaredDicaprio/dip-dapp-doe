@@ -43,6 +43,18 @@
     text-align: center;
 }
 
+@media (min-width: 768px) {
+    #game td .cell {
+        min-height: 60px;
+    }
+}
+
+@media (min-width: 992px) {
+    #game td .cell {
+        min-height: 80px;
+    }
+}
+
 #game td .cell.cell-o {
     background-image: url(../media/cell-oval.png);
     background-size: contain;

@@ -4,12 +4,51 @@ PATH=./node_modules/.bin:$PATH
 ###############################################################################
 # ACTIONS
 
+function init {
+  if [ -x $(which sudo) ]
+  then sudo npm i -g parcel-bundler
+  else npm i -g parcel-bundler
+  fi
+}
+
 function build {
-  parcel build src/index.html -d build
+  NODE_ENV=production parcel build -d ./build --log-level 2 --no-source-maps src/index.html
 }
 
 function dev {
-  parcel src/index.html -d ./build
+  NODE_ENV=development parcel -d ./build --no-minify src/index.html
+}
+
+function test {
+  # local blockchain node
+  echo "Starting ganache"
+  ganache-cli --seed "DipDappDoe" > /dev/null &
+  ganache_pid=$!
+
+  echo "Recompiling the contracts"
+  cd ../blockchain
+  ./taskfile build
+  cd ../web
+
+  echo "Deploying to ganache"
+  node ./test/deploy-ganache.js
+
+  echo "Bundling the web with NODE_ENV=test"
+  NODE_ENV=test parcel build -d ./build --log-level 2 --no-source-maps src/index.html &
+  parcel_pid=$!
+  
+  echo "Starting local web server"
+  serve build -p 8080 &
+  serve_pid=$!
+
+  echo "Running the tests"
+  wait $parcel_pid
+  mocha ./test/frontend.spec.js
+  sleep 1
+
+  echo "Stopping the servers"
+  kill $ganache_pid
+  kill $serve_pid
 }
 
 ###############################################################################

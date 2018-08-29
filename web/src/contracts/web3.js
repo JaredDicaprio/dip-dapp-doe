@@ -1,4 +1,5 @@
 import Web3 from "web3"
+const WEBSOCKET_WEB3_PROVIDER = process.env.WEBSOCKET_WEB3_PROVIDER
 
 let injectedWeb3, webSocketWeb3
 
@@ -20,7 +21,7 @@ export function getInjectedWeb3() {
 
 export function getWebSocketWeb3() {
     if (!webSocketWeb3) {
-        webSocketWeb3 = new Web3(new Web3.providers.WebsocketProvider('wss://ropsten.infura.io/ws'))
+        webSocketWeb3 = new Web3(new Web3.providers.WebsocketProvider(WEBSOCKET_WEB3_PROVIDER))
     }
     return webSocketWeb3
 }

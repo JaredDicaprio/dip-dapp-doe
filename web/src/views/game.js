@@ -230,6 +230,7 @@ class GameView extends Component {
                     message: 'Game confirmed',
                     description: 'The game is on. Good luck!',
                 })
+                this.props.dispatch({ type: "REMOVE_CREATED_GAME", id: game.id })
 
                 return this.fetchGameStatus().then(game => {
                     this.setState({ game })

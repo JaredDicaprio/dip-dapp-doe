@@ -1,6 +1,6 @@
 import { getInjectedWeb3, getWebSocketWeb3 } from "./web3"
 import dipDappDoeAbi from "./dip-dapp-doe.json"
-const CONTRACT_ADDRESS = "0xf42F14d2cE796fec7Cd8a2D575dDCe402F2f3F8F"
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS
 
 export default function (useBrowserWeb3 = false) {
     let web3

@@ -16,13 +16,41 @@ function build {
 }
 
 function dev {
-  NODE_ENV=development parcel -d ./build --no-minify src/index.html
+  if [ "$1" == "ropsten" ];
+  then
+    echo "Running on the ropsten blockchain"
+    NODE_ENV=development parcel -d ./build src/index.html
+  else
+    echo "Starting ganache"
+    ganache-cli --mnemonic "$(cat ./dev/mnemonic.txt)" > /dev/null &
+    ganache_pid=$!
+
+    echo "Recompiling the contracts"
+    cd ../blockchain
+    ./taskfile build
+    cd ../web
+
+    echo "Deploying to ganache"
+    node ./dev/local-deploy.js
+
+    echo "Opening a dev browser"
+    node ./dev/open-browser.js &
+    browser_pid=$!
+
+    # parcel watch
+    NODE_ENV=test parcel -d ./build src/index.html
+
+    wait
+
+    echo "Stopping the servers"
+    kill $ganache_pid
+    kill $browser_pid
+  fi
 }
 
 function test {
-  # local blockchain node
   echo "Starting ganache"
-  ganache-cli --seed "DipDappDoe" > /dev/null &
+  ganache-cli --mnemonic "$(cat ./dev/mnemonic.txt)" > /dev/null &
   ganache_pid=$!
 
   echo "Recompiling the contracts"
@@ -31,14 +59,14 @@ function test {
   cd ../web
 
   echo "Deploying to ganache"
-  node ./test/deploy-ganache.js
+  node ./dev/local-deploy.js
 
   echo "Bundling the web with NODE_ENV=test"
   NODE_ENV=test parcel build -d ./build --log-level 2 --no-source-maps src/index.html &
   parcel_pid=$!
   
   echo "Starting local web server"
-  serve build -p 8080 &
+  serve build -p 1234 &
   serve_pid=$!
 
   echo "Running the tests"

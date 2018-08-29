@@ -91,7 +91,7 @@ class App extends Component {
     render() {
         if (this.props.status.loading) return <Container><LoadingView /></Container>
         else if (this.props.status.unsupported) return <MessageView message="Please, install Metamask for Chrome or Firefox" />
-        else if (this.props.status.networkId != process.env.EXPECTED_NETWORK_ID) return <MessageView message="Please, switch to the Ropsten network" />
+        else if (this.props.status.networkId != process.env.EXPECTED_NETWORK_ID) return <MessageView message={`Please, switch to the ${process.env.EXPECTED_NETWORK_ID} network`} />
         else if (!this.props.status.connected) return <MessageView message="Your connection seems to be down" />
         else if (!this.props.accounts || !this.props.accounts.length) return <MessageView message="Please, unlock your wallet or create an account" />
 

@@ -29,7 +29,6 @@ async function deployContracts() {
     const accounts = await web3.eth.getAccounts()
 
     console.log(`The account used to deploy is ${accounts[0]}`)
-    console.log("Current balance: ", await web3.eth.getBalance(accounts[0]), "\n")
 
     const libStringAbi = fs.readFileSync(path.resolve(__dirname, "..", "..", "blockchain", "build", "__contracts_LibString_sol_LibString.abi")).toString()
     const libStringBytecode = fs.readFileSync(path.resolve(__dirname, "..", "..", "blockchain", "build", "__contracts_LibString_sol_LibString.bin")).toString()
@@ -51,6 +50,7 @@ async function deployContracts() {
         const dipDappDoeAddress = await deploy(web3, accounts[0], dipDappDoeAbi, linkedDipDappDoeBytecode, 0)
         console.log(`- DipDappDoe deployed at ${dipDappDoeAddress}`)
 
+        // write .env.test.local
         setContractAddressToEnv(dipDappDoeAddress)
     }
     catch (err) {

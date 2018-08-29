@@ -19,6 +19,7 @@ function build {
 }
 
 function deploy {
+  build
   node deploy
 }
 

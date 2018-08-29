@@ -35,11 +35,52 @@ Or:
 ## Web
 
 * Develop with live reload: `run dev`
-* Build for release: `run build`
-* Run the E2E test: `run test`
-    * Bundle the web
     * Start a local blockchain
     * Deploy the contracts to the local blockchain
+    * Open Chromium with MetaMask pointing to ganache
+    * Bundle the web and serve it with live reload
+* Develop with live reload: `run dev ropsten`
+    * Start a dev server with live reload
+    * The ropsten test network will be used
+* Build for release: `run build`
+    * Bundle the static web assets to `./build`
+* Run the E2E test: `run test`
+    * Start a local blockchain
+    * Deploy the contracts to the local blockchain
+    * Bundle the web
     * Start a local server
     * Open Chromium (puppeteer)
     * Run the tests locally
+
+# Typical workflow
+
+    [sudo] npm i -g runner-cli
+
+## Development
+Blockchain:
+
+    cd blockchain
+    run init
+    # do your changes
+    run test
+    # repeat...
+
+Frontend:
+
+    cd web
+    run init
+    run dev  # or "run dev ropsten"
+    # do your changes and live reload
+
+## Deployment
+Blockchain:
+
+    cd blockchain
+    run deploy  # implies "run build"
+
+Frontend:
+
+    cd web
+    run build
+    ls ./build  # your dist files are here
+

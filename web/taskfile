@@ -72,11 +72,13 @@ function test {
   echo "Running the tests"
   wait $parcel_pid
   mocha ./test/frontend.spec.js
+  mocha_result=$?
   sleep 1
 
   echo "Stopping the servers"
   kill $ganache_pid
   kill $serve_pid
+  exit $mocha_result
 }
 
 ###############################################################################

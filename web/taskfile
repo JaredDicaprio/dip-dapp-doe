@@ -27,11 +27,12 @@ function dev {
 
     echo "Recompiling the contracts"
     cd ../blockchain
-    ./taskfile build
+    ./taskfile build > /dev/null
     cd ../web
 
     echo "Deploying to ganache"
     node ./dev/local-deploy.js
+    echo
 
     echo "Opening a dev browser"
     node ./dev/open-browser.js &
@@ -55,18 +56,19 @@ function test {
 
   echo "Recompiling the contracts"
   cd ../blockchain
-  ./taskfile build
+  ./taskfile build > /dev/null
   cd ../web
 
   echo "Deploying to ganache"
   node ./dev/local-deploy.js
+  echo
 
   echo "Bundling the web with NODE_ENV=test"
   NODE_ENV=test parcel build -d ./build --log-level 2 --no-source-maps src/index.html &
   parcel_pid=$!
   
   echo "Starting local web server"
-  serve build -p 1234 &
+  serve build -p 1234 > /dev/null &
   serve_pid=$!
 
   echo "Running the tests"

@@ -149,6 +149,11 @@ class MainView extends Component {
         </Row>
     }
 
+    renderListContent(openGames) {
+        if (!openGames || !openGames.length) return <p className="light">There are no open games at the moment. You can create one!</p>
+        else return openGames.map((game, idx) => this.renderOpenGameRow(game, idx))
+    }
+
     renderGameList() {
         return <div className="card">
             <h1 className="light">Dip Dapp Doe</h1>
@@ -159,15 +164,15 @@ class MainView extends Component {
             {
                 this.state.acceptLoading ?
                     <div className="text-center" style={{ margin: 50 }}>Please, wait  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
-                    <div>
-                        {this.props.openGames.map((game, idx) => this.renderOpenGameRow(game, idx))}
+                    <div id="list">
+                        {this.renderListContent(this.props.openGames)}
                     </div>
             }
 
 
             <Media query="(max-width: 767px)" render={() => [
-                <Divider />,
-                <Button type="primary" className="width-100"
+                <Divider key="0" />,
+                <Button type="primary" className="width-100" key="1"
                     onClick={() => this.setState({ showCreateGame: !this.state.showCreateGame })}>Start a new  game</Button>
             ]} />
         </div>
@@ -201,15 +206,15 @@ class MainView extends Component {
                     <InputNumber className="margin-bottom width-100" placeholder="0.00 (optional)" name="value" onChange={value => this.setState({ value })} />
                 </Col>
                 <Col>
-                    <Media query="(max-width: 767px)" render={() => [
+                    <Media query="(max-width: 767px)" render={() => (
                         <Button type="primary" className="margin-bottom width-100"
                             onClick={() => this.setState({ showCreateGame: !this.state.showCreateGame })}>Cancel</Button>
-                    ]} />
+                    )} />
 
                     {
                         this.state.creationLoading ?
                             <div className="text-center">Please, wait  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
-                            <Button type="primary" className="width-100" onClick={() => this.createGame()}>Start new game</Button>
+                            <Button type="primary" id="start" className="width-100" onClick={() => this.createGame()}>Start new game</Button>
                     }
                 </Col>
             </Row>

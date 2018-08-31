@@ -23,6 +23,7 @@
     "ganache-cli": "^6.1.8",
     "mocha": "^5.2.0",
     "puppeteer": "^1.7.0",
-    "serve": "^10.0.0"
+    "serve": "^10.0.0",
+    "truffle-hdwallet-provider": "0.0.6"
   }
 }

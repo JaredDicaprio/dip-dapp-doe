@@ -468,38 +468,39 @@ class GameView extends Component {
             <Col md={24}>
                 <div className="card">
                     <h1 className="light">Current game</h1>
-                    <p className="light">{this.state.status}</p>
+                    <p id="status" className="light">{this.getStatus()}</p>
+                    <p id="timer" className="light">{this.getTimeStatus()}</p>
 
                     <Divider />
 
                     <table id="board">
                         <tbody>
                             <tr>
-                                <td><div className="cell" onClick={() => this.markPosition(0)} className={this.getCellClass(0)} /></td>
+                                <td><div id="cell-0" onClick={() => this.markPosition(0)} className={this.getCellClass(0)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(1)} className={this.getCellClass(1)} /></td>
+                                <td><div id="cell-1" onClick={() => this.markPosition(1)} className={this.getCellClass(1)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(2)} className={this.getCellClass(2)} /></td>
+                                <td><div id="cell-2" onClick={() => this.markPosition(2)} className={this.getCellClass(2)} /></td>
                             </tr>
                             <tr className="line">
                                 <td colSpan={5} className="line" />
                             </tr>
                             <tr>
-                                <td><div className="cell" onClick={() => this.markPosition(3)} className={this.getCellClass(3)} /></td>
+                                <td><div id="cell-3" onClick={() => this.markPosition(3)} className={this.getCellClass(3)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(4)} className={this.getCellClass(4)} /></td>
+                                <td><div id="cell-4" onClick={() => this.markPosition(4)} className={this.getCellClass(4)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(5)} className={this.getCellClass(5)} /></td>
+                                <td><div id="cell-5" onClick={() => this.markPosition(5)} className={this.getCellClass(5)} /></td>
                             </tr>
                             <tr className="line">
                                 <td colSpan={5} className="line" />
                             </tr>
                             <tr>
-                                <td><div className="cell" onClick={() => this.markPosition(6)} className={this.getCellClass(6)} /></td>
+                                <td><div id="cell-6" onClick={() => this.markPosition(6)} className={this.getCellClass(6)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(7)} className={this.getCellClass(7)} /></td>
+                                <td><div id="cell-7" onClick={() => this.markPosition(7)} className={this.getCellClass(7)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(8)} className={this.getCellClass(8)} /></td>
+                                <td><div id="cell-8" onClick={() => this.markPosition(8)} className={this.getCellClass(8)} /></td>
                             </tr>
                         </tbody>
                     </table>
@@ -523,31 +524,31 @@ class GameView extends Component {
                     <table id="board">
                         <tbody>
                             <tr>
-                                <td><div className="cell" onClick={() => this.markPosition(0)} className={this.getCellClass(0)} /></td>
+                                <td><div id="cell-0" onClick={() => this.markPosition(0)} className={this.getCellClass(0)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(1)} className={this.getCellClass(1)} /></td>
+                                <td><div id="cell-1" onClick={() => this.markPosition(1)} className={this.getCellClass(1)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(2)} className={this.getCellClass(2)} /></td>
+                                <td><div id="cell-2" onClick={() => this.markPosition(2)} className={this.getCellClass(2)} /></td>
                             </tr>
                             <tr className="line">
                                 <td colSpan={5} className="line" />
                             </tr>
                             <tr>
-                                <td><div className="cell" onClick={() => this.markPosition(3)} className={this.getCellClass(3)} /></td>
+                                <td><div id="cell-3" onClick={() => this.markPosition(3)} className={this.getCellClass(3)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(4)} className={this.getCellClass(4)} /></td>
+                                <td><div id="cell-4" onClick={() => this.markPosition(4)} className={this.getCellClass(4)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(5)} className={this.getCellClass(5)} /></td>
+                                <td><div id="cell-5" onClick={() => this.markPosition(5)} className={this.getCellClass(5)} /></td>
                             </tr>
                             <tr className="line">
                                 <td colSpan={5} className="line" />
                             </tr>
                             <tr>
-                                <td><div className="cell" onClick={() => this.markPosition(6)} className={this.getCellClass(6)} /></td>
+                                <td><div id="cell-6" onClick={() => this.markPosition(6)} className={this.getCellClass(6)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(7)} className={this.getCellClass(7)} /></td>
+                                <td><div id="cell-7" onClick={() => this.markPosition(7)} className={this.getCellClass(7)} /></td>
                                 <td className="line" />
-                                <td><div className="cell" onClick={() => this.markPosition(8)} className={this.getCellClass(8)} /></td>
+                                <td><div id="cell-8" onClick={() => this.markPosition(8)} className={this.getCellClass(8)} /></td>
                             </tr>
                         </tbody>
                     </table>
@@ -567,12 +568,12 @@ class GameView extends Component {
 
                     {
                         (this.state.loadingGameInfo || this.state.confirmLoading || this.state.markLoading) ?
-                            <div>Waiting  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
+                            <div class="loading-spinner">Waiting  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
                             <div>
-                                <p className="light">{this.getStatus()}</p>
-                                <p className="light">{this.getTimeStatus()}</p>
+                                <p id="status" className="light">{this.getStatus()}</p>
+                                <p id="timer" className="light">{this.getTimeStatus()}</p>
                                 {
-                                    this.state.game ? <p className="light">Game bet: {web3.utils.fromWei(this.state.game.amount)} Ξ</p> : null
+                                    this.state.game ? <p id="bet" className="light">Game bet: {web3.utils.fromWei(this.state.game.amount)} Ξ</p> : null
                                 }
 
                                 <Media query="(max-width: 767px)" render={() => [

@@ -17,11 +17,14 @@ function build {
   ./taskfile build > /dev/null
   cd ../web
 
+  echo "Cleaning the build folder"
+  rm ./build/*
+
   echo "Bundling the web site"
-  NODE_ENV=production parcel build -d ./build --log-level 2 --no-source-maps src/index.html
+  NODE_ENV=production parcel build -d ./build --log-level 2 --no-source-maps --public-url ./ src/index.html
 }
 
-function app {
+function www {
   build
 
   serve build -p 1234

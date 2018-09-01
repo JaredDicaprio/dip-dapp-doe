@@ -12,6 +12,12 @@ function init {
 }
 
 function build {
+  echo "Recompiling the contracts"
+  cd ../blockchain
+  ./taskfile build > /dev/null
+  cd ../web
+
+  echo "Bundling the web site"
   NODE_ENV=production parcel build -d ./build --log-level 2 --no-source-maps src/index.html
 }
 
@@ -25,10 +31,12 @@ function dev {
     ganache-cli --mnemonic "$(cat ./dev/mnemonic.txt)" > /dev/null &
     ganache_pid=$!
 
-    echo "Recompiling the contracts"
-    cd ../blockchain
-    ./taskfile build > /dev/null
-    cd ../web
+    # Uncomment below to recompile the contracts
+
+    # echo "Recompiling the contracts"
+    # cd ../blockchain
+    # ./taskfile build > /dev/null
+    # cd ../web
 
     echo "Deploying to ganache"
     node ./dev/local-deploy.js
@@ -54,10 +62,12 @@ function test {
   ganache-cli --mnemonic "$(cat ./dev/mnemonic.txt)" > /dev/null &
   ganache_pid=$!
 
-  echo "Recompiling the contracts"
-  cd ../blockchain
-  ./taskfile build > /dev/null
-  cd ../web
+  # Uncomment below to recompile the contracts
+
+  # echo "Recompiling the contracts"
+  # cd ../blockchain
+  # ./taskfile build > /dev/null
+  # cd ../web
 
   echo "Deploying to ganache"
   sleep 2

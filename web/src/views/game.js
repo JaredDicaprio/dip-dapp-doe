@@ -342,6 +342,34 @@ class GameView extends Component {
             })
     }
 
+    requestWithdrawal() {
+        let DipDappDoe = getDipDappDoeInstance(true)
+
+        this.setState({ withdrawLoading: true })
+
+        return DipDappDoe.methods.withdraw(this.props.match.params.id)
+            .send({ from: this.props.accounts[0] })
+            .then(tx => {
+                this.setState({ withdrawLoading: false })
+
+                notification.success({
+                    message: "Success",
+                    description: "The money has been withdrawn"
+                })
+
+                return this.fetchGameStatus()
+            })
+            .catch(err => {
+                this.setState({ withdrawLoading: false })
+
+                let msg = err.message.replace(/\.$/, "").replace(/Returned error: Error: MetaMask Tx Signature: /, "")
+                notification.error({
+                    message: 'Unable to complete the transaction',
+                    description: msg
+                })
+            })
+    }
+
     // Render helpers
 
     getStatus() {
@@ -397,23 +425,21 @@ class GameView extends Component {
     }
 
     getTimeStatus() {
-        let diff = 0, action = "", subject = "", message = ""
+        let action = "", subject = "", message = ""
+        let remaining = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
 
         if (!this.state.game || !this.props.accounts) return "-"
         else if (this.state.game.status == "0") {
             if (this.state.game.player2.match(/^0x0+$/)) {
-                diff = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
                 subject = (this.state.game.player1 == this.props.accounts[0]) ? "You" : this.state.game.nick1
                 action = "cancel the game"
             }
             else {
-                diff = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
                 subject = (this.state.game.player2 == this.props.accounts[0]) ? "You" : this.state.game.nick2
                 action = "claim the game"
             }
         }
         else if (this.state.game.status == "1") {
-            diff = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
             action = "claim the game"
 
             if (this.state.game.player2 == this.props.accounts[0]) {
@@ -424,7 +450,6 @@ class GameView extends Component {
             }
         }
         else if (this.state.game.status == "2") {
-            diff = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
             action = "claim the game"
 
             if (this.state.game.player1 == this.props.accounts[0]) {
@@ -435,23 +460,59 @@ class GameView extends Component {
             }
         }
         else {
-            return "" // { diff: 0, action: null, subject: null }
+            return ""
         }
 
-        diff /= 1000 // in seconds
+        remaining /= 1000 // in seconds
 
-        if (diff >= 120) {
-            return `Remaining time: ${Math.round(diff / 60)} minutes before ${subject} can ${action}`
+        if (remaining >= 120) {
+            return `Remaining time: ${Math.round(remaining / 60)} minutes before ${subject} can ${action}`
         }
-        else if (diff >= 60) {
+        else if (remaining >= 60) {
             return `Remaining time: About one minute before ${subject} can ${action}`
         }
-        else if (diff >= 0) {
-            return `Remaining time: ${Math.round(diff)} seconds before ${subject} can ${action}`
+        else if (remaining >= 0) {
+            return `Remaining time: ${Math.round(remaining)} seconds before ${subject} can ${action}`
         }
         else {
             return `Out of time: ${subject} could ${action}`
         }
+    }
+
+    canWithdraw() {
+        const remaining = (this.state.game.lastTransaction + CONTRACT_TIMEOUT) - Date.now()
+
+        if (!this.state.game || !this.props.accounts) return false
+        else if (this.state.game.player1 != this.props.accounts[0] &&
+            this.state.game.player2 != this.props.accounts[0]) return false
+        else if (this.state.game.status == "0") {
+            if (remaining > 0) return false
+            else if (this.state.game.player2.match(/^0x0+$/)) { // not accepted
+                return this.state.game.player1 == this.props.accounts[0]
+            }
+            else { // not confirmed
+                return this.state.game.player2 == this.props.accounts[0]
+            }
+        }
+        else if (this.state.game.status == "1") {
+            if (remaining > 0) return false
+            else return this.state.game.player2 == this.props.accounts[0]
+        }
+        else if (this.state.game.status == "2") {
+            if (remaining > 0) return false
+            else return this.state.game.player1 == this.props.accounts[0]
+        }
+        // TODO: Detect if the player has already withdrawn
+        else if (this.state.game.status == "10") {
+            return true
+        }
+        else if (this.state.game.status == "11") {
+            return this.state.game.player1 == this.props.accounts[0]
+        }
+        else if (this.state.game.status == "12") {
+            return this.state.game.player2 == this.props.accounts[0]
+        }
+        return false
     }
 
     getCellClass(idx) {
@@ -463,7 +524,11 @@ class GameView extends Component {
         }
     }
 
+    // RENDER METHODS
+
     renderMobile() {
+        let web3 = getWebSocketWeb3()
+
         return <Row>
             <Col md={24}>
                 <div className="card">
@@ -505,6 +570,13 @@ class GameView extends Component {
                         </tbody>
                     </table>
 
+                    {
+                        (this.canWithdraw() && this.state.game && this.state.game.amount != 0) ? [
+                            <Divider key="0" />,
+                            <Button id="withdraw" key="1" type="primary" className="width-100"
+                                onClick={() => this.requestWithdrawal()}>Withdraw {web3.utils.fromWei(this.state.game.amount)} Ξ</Button>
+                        ] : null
+                    }
                 </div>
             </Col>
         </Row>
@@ -553,11 +625,6 @@ class GameView extends Component {
                         </tbody>
                     </table>
 
-                    <Media query="(max-width: 767px)" render={() => [
-                        <Divider />,
-                        <Button type="primary" className="width-100"
-                            onClick={() => this.setState({ showCreateGame: !this.state.showCreateGame })}>Start a new  game</Button>
-                    ]} />
                 </div>
             </Col>
             <Col md={12}>
@@ -568,7 +635,7 @@ class GameView extends Component {
 
                     {
                         (this.state.loadingGameInfo || this.state.confirmLoading || this.state.markLoading) ?
-                            <div class="loading-spinner">Waiting  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
+                            <div className="loading-spinner">Waiting  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
                             <div>
                                 <p id="status" className="light">{this.getStatus()}</p>
                                 <p id="timer" className="light">{this.getTimeStatus()}</p>
@@ -576,11 +643,13 @@ class GameView extends Component {
                                     this.state.game ? <p id="bet" className="light">Game bet: {web3.utils.fromWei(this.state.game.amount)} Ξ</p> : null
                                 }
 
-                                <Media query="(max-width: 767px)" render={() => [
-                                    <Divider />,
-                                    <Button type="primary" className="width-100"
-                                        onClick={() => this.setState({ showCreateGame: !this.state.showCreateGame })}>Start a new  game</Button>
-                                ]} />
+                                {
+                                    (this.canWithdraw() && this.state.game && this.state.game.amount != 0) ? [
+                                        <Divider key="0" />,
+                                        <Button id="withdraw" key="1" type="primary" className="width-100"
+                                            onClick={() => this.requestWithdrawal()}>Withdraw {web3.utils.fromWei(this.state.game.amount)} Ξ</Button>
+                                    ] : null
+                                }
                             </div>
                     }
 

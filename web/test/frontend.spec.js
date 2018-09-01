@@ -184,6 +184,24 @@ describe("DipDappDoe frontend", async function () {
         await page.waitForSelector('#status')
         value = await page.$eval("#status", node => node.innerText)
         expect(value).to.equal("The game ended in draw")
+        
+        await page.waitForSelector('#withdraw')
+        value = await page.$eval("#withdraw", node => node.innerText)
+        expect(value).to.equal("Withdraw 1 Ξ")
+
+        // WITHDRAW 
+
+        await page.click("#withdraw")
+        await delay(200)
+        await metamask.confirmTransaction(DEFAULT_METAMASK_OPTIONS)
+
+        // wait for tx
+        await page.bringToFront()
+        await delay(3000)
+
+        await page.waitForSelector('.ant-notification-notice-description')
+        value = await page.$eval(".ant-notification-notice-description", node => node.innerText)
+        expect(value).to.equal("The money has been withdrawn")
     })
 })
 

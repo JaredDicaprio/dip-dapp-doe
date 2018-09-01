@@ -6,6 +6,7 @@ import Media from "react-media"
 import getDipDappDoeInstance from "../contracts/dip-dapp-doe"
 import { getWebSocketWeb3 } from "../contracts/web3"
 import ConfirmAcceptModal from "../widgets/confirm-accept-modal"
+import { fetchOpenGames } from "../store/actions";
 
 class MainView extends Component {
     constructor(props) {
@@ -120,6 +121,7 @@ class MainView extends Component {
                         message: 'Game accepted',
                         description: 'You have accepted the game. Waiting for creator to confirm.',
                     })
+                    this.props.dispatch(fetchOpenGames())
                 })
                 .catch(err => {
                     this.setState({ acceptLoading: false })
@@ -140,10 +142,10 @@ class MainView extends Component {
             <Col xs={2} sm={3}>
                 <img src={idx % 2 ? require("../media/cross.png") : require("../media/circle.png")} />
             </Col>
-            <Col xs={12} sm={15} style={{ marginTop: 0, fontSize: 16 }}>
+            <Col xs={12} sm={15} style={{ marginTop: 0, fontSize: 16 }} className="open-game-row-text">
                 {game.nick1} {game.amount && game.amount != "0" ? <small>({web3.utils.fromWei(game.amount)} Ξ)</small> : null}
             </Col>
-            <Col xs={9} sm={6}>
+            <Col xs={9} sm={6} className="open-game-row-accept">
                 <Button type="primary" className="width-100" onClick={() => this.showAcceptGameModal(idx)}>Accept</Button>
             </Col>
         </Row>

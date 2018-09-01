@@ -39,6 +39,7 @@ function dev {
     # cd ../web
 
     echo "Deploying to ganache"
+    sleep 2
     node ./dev/local-deploy.js
     echo
 

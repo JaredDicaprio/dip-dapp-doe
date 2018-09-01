@@ -103,7 +103,14 @@ class GameView extends Component {
         return this.fetchGameStatus().then(game => {
             this.setState({ game, loadingGameInfo: false })
 
-            message.info(`${game.nick1} has marked a cell`)
+            if (game.status == "1") {
+                if (game.player1 == this.props.accounts[0])
+                    message.info(`${game.nick2} has marked a cell`)
+            }
+            else if (game.status == "2") {
+                if (game.player2 == this.props.accounts[0])
+                    message.info(`${game.nick1} has marked a cell`)
+            }
 
             return this.checkLastPositionLeft(game)
         })
@@ -201,7 +208,7 @@ class GameView extends Component {
     // Transactions
 
     checkConfirmGame(game) {
-        if (game.status != "0" || game.player2.match(/^0x0+$/) || game.player1 != this.props.accounts[0]) {
+        if (this.state.confirmLoading || game.status != "0" || game.player2.match(/^0x0+$/) || game.player1 != this.props.accounts[0]) {
             return
         }
 
@@ -248,6 +255,8 @@ class GameView extends Component {
     }
 
     checkLastPositionLeft(game) {
+        if (this.state.markLoading) return
+        
         // Automatically mark a cell if only one position is left
 
         if ((game.status != "1" && game.status != "2") ||
@@ -370,6 +379,10 @@ class GameView extends Component {
             })
     }
 
+    goBack() {
+        document.location.hash = "#/"
+    }
+
     // Render helpers
 
     getStatus() {
@@ -411,7 +424,7 @@ class GameView extends Component {
                 return "Congratulations! You are the winner"
             }
             else {
-                return `${this.state.game.nick2} is the winner of this game`
+                return `${this.state.game.nick1} is the winner of this game`
             }
         }
         else if (this.state.game.status == "12") {
@@ -419,7 +432,7 @@ class GameView extends Component {
                 return "Congratulations! You are the winner"
             }
             else {
-                return `${this.state.game.nick1} is the winner of this game`
+                return `${this.state.game.nick2} is the winner of this game`
             }
         }
     }
@@ -570,13 +583,16 @@ class GameView extends Component {
                         </tbody>
                     </table>
 
+                    <Divider />
                     {
                         (this.canWithdraw() && this.state.game && this.state.game.amount != 0) ? [
-                            <Divider key="0" />,
                             <Button id="withdraw" key="1" type="primary" className="width-100"
-                                onClick={() => this.requestWithdrawal()}>Withdraw {web3.utils.fromWei(this.state.game.amount)} Ξ</Button>
+                                onClick={() => this.requestWithdrawal()}>Withdraw {web3.utils.fromWei(this.state.game.amount)} Ξ</Button>,
+                            <br key="3" />,
+                            <br key="4" />
                         ] : null
                     }
+                    <Button id="back" type="primary" className="width-100" onClick={() => this.goBack()}>Go back</Button>
                 </div>
             </Col>
         </Row>
@@ -634,7 +650,7 @@ class GameView extends Component {
                     <Divider />
 
                     {
-                        (this.state.loadingGameInfo || this.state.confirmLoading || this.state.markLoading) ?
+                        (this.state.loadingGameInfo || this.state.confirmLoading || this.state.markLoading || this.state.withdrawLoading) ?
                             <div className="loading-spinner">Waiting  <Spin indicator={<Icon type="loading" style={{ fontSize: 14 }} spin />} /> </div> :
                             <div>
                                 <p id="status" className="light">{this.getStatus()}</p>
@@ -647,9 +663,12 @@ class GameView extends Component {
                                     (this.canWithdraw() && this.state.game && this.state.game.amount != 0) ? [
                                         <Divider key="0" />,
                                         <Button id="withdraw" key="1" type="primary" className="width-100"
-                                            onClick={() => this.requestWithdrawal()}>Withdraw {web3.utils.fromWei(this.state.game.amount)} Ξ</Button>
+                                            onClick={() => this.requestWithdrawal()}>Withdraw {web3.utils.fromWei(this.state.game.amount)} Ξ</Button>,
+                                        <br key="3" />,
+                                        <br key="4" />
                                     ] : null
                                 }
+                                <Button id="back" type="primary" className="width-100" onClick={() => this.goBack()}>Go back</Button>
                             </div>
                     }
 

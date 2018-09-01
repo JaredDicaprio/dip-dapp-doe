@@ -23,11 +23,11 @@ class App extends Component {
 
                 return this.checkWeb3Status()
             }).then(() => {
-                this.addListeners()
-
                 this.checkInterval = setInterval(() => this.checkWeb3Status(), 1000)
 
                 this.props.dispatch(fetchOpenGames(this.DipDappDoe))
+
+                this.addListeners()
             })
         }
         else {

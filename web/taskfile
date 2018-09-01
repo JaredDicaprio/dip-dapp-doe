@@ -21,6 +21,12 @@ function build {
   NODE_ENV=production parcel build -d ./build --log-level 2 --no-source-maps src/index.html
 }
 
+function app {
+  build
+
+  serve build -p 1234
+}
+
 function dev {
   if [ "$1" == "ropsten" ];
   then

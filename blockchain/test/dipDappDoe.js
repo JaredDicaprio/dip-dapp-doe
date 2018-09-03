@@ -1901,8 +1901,21 @@ contract('DipDappDoe', function (accounts) {
         const balance1pre = await web3.eth.getBalance(player1);
         const balance2pre = await web3.eth.getBalance(player2);
 
+        let [withdrawn1, withdrawn2] = await gamesInstance.getGameWithdrawals(gameIdx);
+        assert(withdrawn1 == false, "Player 1 should not have withdrawn any money yet");
+        assert(withdrawn2 == false, "Player 2 should not have withdrawn any money yet");
+
         const tx1 = await gamesInstance.withdraw(gameIdx, { from: player1 });
+
+        [withdrawn1, withdrawn2] = await gamesInstance.getGameWithdrawals(gameIdx);
+        assert(withdrawn1 == true, "Player 1 should have withdrawn the money");
+        assert(withdrawn2 == false, "Player 2 should not have withdrawn any money yet");
+
         const tx2 = await gamesInstance.withdraw(gameIdx, { from: player2 });
+
+        [withdrawn1, withdrawn2] = await gamesInstance.getGameWithdrawals(gameIdx);
+        assert(withdrawn1 == true, "Player 1 should have withdrawn the money");
+        assert(withdrawn2 == true, "Player 2 should have withdrawn the money");
 
         const balance1post = await web3.eth.getBalance(player1);
         const balance2post = await web3.eth.getBalance(player2);

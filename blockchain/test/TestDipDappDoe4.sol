@@ -48,6 +48,8 @@ contract TestDipDappDoe4 {
         uint amount;
         string memory nick1;
         string memory nick2;
+        bool withdrawn1;
+        bool withdrawn2;
 
         bytes32 hash = gamesInstance.saltedHash(100, "my salt goes here");
         uint32 gameIdx = gamesInstance.createGame.value(0.01 ether)(hash, "John");
@@ -69,11 +71,19 @@ contract TestDipDappDoe4 {
         (cells, status, amount, nick1, nick2) = gamesInstance.getGameInfo(gameIdx);
         Assert.equal(uint(status), 10, "The game should end in draw");
 
+        (withdrawn1, withdrawn2) = gamesInstance.getGameWithdrawals(gameIdx);
+        Assert.equal(withdrawn1, false, "Player 1 should not have withdrawn any money yet");
+        Assert.equal(withdrawn2, false, "Player 2 should not have withdrawn any money yet");
+
         uint balancePre = address(this).balance;
         gamesInstance.withdraw(gameIdx);
         uint balancePost = address(this).balance;
 
         Assert.equal(balancePre + 0.01 ether, balancePost, "Withdrawal should have transfered 0.01 ether");
+
+        (withdrawn1, withdrawn2) = gamesInstance.getGameWithdrawals(gameIdx);
+        Assert.equal(withdrawn1, true, "Player 1 should have withdrawn the money");
+        Assert.equal(withdrawn2, false, "Player 2 should not have withdrawn any money yet");
     }
 
     function() public payable {}

@@ -75,6 +75,14 @@ contract DipDappDoe {
         );
     }
 
+    function getGameWithdrawals(uint32 gameIdx) public view 
+    returns (bool player1, bool player2) {
+        return (
+            gamesData[gameIdx].withdrawn[0],
+            gamesData[gameIdx].withdrawn[1]
+        );
+    }
+
     // OPERATIONS
 
     function createGame(bytes32 randomNumberHash, string nick) public payable returns (uint32 gameIdx) {

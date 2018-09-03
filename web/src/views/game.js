@@ -201,6 +201,11 @@ class GameView extends Component {
         }).then(timestamp => {
             result.lastTransaction = timestamp * 1000
 
+            return DipDappDoe.methods.getGameWithdrawals(this.props.match.params.id).call()
+        }).then(withdrawals => {
+            result.withdrawn1 = withdrawals.player1
+            result.withdrawn2 = withdrawals.player2
+
             return result
         })
     }
@@ -256,7 +261,7 @@ class GameView extends Component {
 
     checkLastPositionLeft(game) {
         if (this.state.markLoading) return
-        
+
         // Automatically mark a cell if only one position is left
 
         if ((game.status != "1" && game.status != "2") ||
@@ -366,10 +371,14 @@ class GameView extends Component {
                     description: "The money has been withdrawn"
                 })
 
-                return this.fetchGameStatus()
+                this.setState({ loadingGameInfo: true })
+
+                return this.fetchGameStatus().then(game => {
+                    this.setState({ game, loadingGameInfo: false })
+                })
             })
             .catch(err => {
-                this.setState({ withdrawLoading: false })
+                this.setState({ withdrawLoading: false, loadingGameInfo: false })
 
                 let msg = err.message.replace(/\.$/, "").replace(/Returned error: Error: MetaMask Tx Signature: /, "")
                 notification.error({
@@ -500,7 +509,7 @@ class GameView extends Component {
             this.state.game.player2 != this.props.accounts[0]) return false
         else if (this.state.game.status == "0") {
             if (remaining > 0) return false
-            else if (this.state.game.player2.match(/^0x0+$/)) { // not accepted
+            else if (this.state.game.player2.match(/^0x0+$/)) { // not accepted yet
                 return this.state.game.player1 == this.props.accounts[0]
             }
             else { // not confirmed
@@ -515,14 +524,21 @@ class GameView extends Component {
             if (remaining > 0) return false
             else return this.state.game.player1 == this.props.accounts[0]
         }
-        // TODO: Detect if the player has already withdrawn
         else if (this.state.game.status == "10") {
-            return true
+            if (this.state.game.player1 == this.props.accounts[0] && !this.state.game.withdrawn1) {
+                return true
+            }
+            else if (this.state.game.player2 == this.props.accounts[0] && !this.state.game.withdrawn2) {
+                return true
+            }
+            return false
         }
         else if (this.state.game.status == "11") {
+            if (this.state.game.withdrawn1) return false
             return this.state.game.player1 == this.props.accounts[0]
         }
         else if (this.state.game.status == "12") {
+            if (this.state.game.withdrawn2) return false
             return this.state.game.player2 == this.props.accounts[0]
         }
         return false

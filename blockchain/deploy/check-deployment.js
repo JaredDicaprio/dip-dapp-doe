@@ -13,7 +13,7 @@ async function startGame() {
     const dipDappDoeAbi = fs.readFileSync(path.resolve(__dirname, "..", "build", "__contracts_DipDappDoe_sol_DipDappDoe.abi")).toString()
 
     try {
-        const dipDappDoeInstance = new web3.eth.Contract(JSON.parse(dipDappDoeAbi), "0xfCF380b4D6Addd35c53d14DF17D4e75d8f58feE5")
+        const dipDappDoeInstance = new web3.eth.Contract(JSON.parse(dipDappDoeAbi), "0xd27574De8b98782A089AE08B24366542dcf2b1fb")
 
         const hash = await dipDappDoeInstance.methods.saltedHash(100, "initial salt").call()
         const tx = await dipDappDoeInstance.methods.createGame(hash, "James").send({ from: accounts[0], value: web3.utils.toWei("0.001", "ether") })

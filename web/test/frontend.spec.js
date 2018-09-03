@@ -61,7 +61,7 @@ describe("DipDappDoe frontend", async function () {
     // TEST CASES
 
     it("should create and play a game ending in draw", async function () {
-        this.timeout(1000 * 50)
+        this.timeout(1000 * 60)
 
         // open localhost
         const page = await browser.newPage()
@@ -212,6 +212,12 @@ describe("DipDappDoe frontend", async function () {
         await page.waitForSelector('.ant-notification-notice-description')
         value = await page.$eval(".ant-notification-notice-description", node => node.innerText)
         expect(value).to.equal("The money has been withdrawn")
+        
+        await delay(200)
+        await page.waitFor(
+            () => document.querySelector('#withdraw') == null,
+            { timeout: 1000 * 30}
+        )
 
         // GO BACK
 
@@ -227,7 +233,7 @@ describe("DipDappDoe frontend", async function () {
     })
 
     it("should play a game created and won by the opponent", async function () {
-        this.timeout(1000 * 50)
+        this.timeout(1000 * 60)
 
         // open localhost
         const page = await browser.newPage()
@@ -340,6 +346,7 @@ describe("DipDappDoe frontend", async function () {
             () => document.querySelector(`#cell-6.cell.cell-x`) != null,
             { timeout: 10 * 1000 },
         )
+        // no money on the game, no withdrawal available
         await page.waitFor(
             () => document.querySelector('#withdraw') == null,
             { timeout: 1000 * 30}

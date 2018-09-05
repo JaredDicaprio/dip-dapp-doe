@@ -1,7 +1,7 @@
 DipDappDoe
 ---
 
-The following repository belongs to the article published on Medium
+The following repository related to the series of articles published on Hackernoon: [Dip Dapp Doe — Anatomy of an Ethereum distributed fair game](https://hackernoon.com/dip-dapp-doe-anatomy-of-an-ethereum-distributed-fair-game-part-1-5ee78980e360)
 
 The project is divided into the `blockchain` files (smart contracts) and the `web` project (React, Redux and Parcel).
 
@@ -35,7 +35,7 @@ Or:
 ## Web
 
 * Develop with live reload: `run dev`
-    * Start a local blockchain
+    * Start a local blockchain (Ganache)
     * Deploy the contracts to the local blockchain
     * Open Chromium with MetaMask pointing to ganache
     * Bundle the web and serve it with live reload
@@ -51,6 +51,17 @@ Or:
     * Start a local server
     * Open Chromium (puppeteer)
     * Run the tests locally
+
+# Dependencies
+
+To work with DipDappDoe you need:
+
+	[sudo] npm i -g truffle parcel-bundler solc ganache-cli
+
+* ParcelJS (HTML/JS/CSS bundler)
+* Truffle (Solidity development tools)
+* Solc (Solidity compiler)
+* Ganache (local blockchain)
 
 # Typical workflow
 
@@ -69,6 +80,7 @@ Frontend:
 
     cd web
     run init
+    run test
     run dev  # or "run dev ropsten"
     # do your changes and live reload
 

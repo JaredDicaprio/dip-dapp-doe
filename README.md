@@ -1,7 +1,7 @@
 DipDappDoe
 ---
 
-The following repository related to the series of articles published on Hackernoon: [Dip Dapp Doe — Anatomy of an Ethereum distributed fair game](https://hackernoon.com/dip-dapp-doe-anatomy-of-an-ethereum-distributed-fair-game-part-1-5ee78980e360)
+The following repository relates to the series of articles published on Hackernoon: [Dip Dapp Doe — Anatomy of an Ethereum distributed fair game](https://hackernoon.com/dip-dapp-doe-anatomy-of-an-ethereum-distributed-fair-game-part-1-5ee78980e360)
 
 The project is divided into the `blockchain` files (smart contracts) and the `web` project (React, Redux and Parcel).
 
